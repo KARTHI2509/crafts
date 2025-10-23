@@ -31,7 +31,10 @@ import {
   returnOrderRequest,
   updateOrderTracking,
   getOrderStats,
-  getRecentOrdersList
+  getRecentOrdersList,
+  getArtisanStats,
+  getArtisanRevenueData,
+  rejectOrderRequest
 } from '../controllers/orderController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
@@ -46,6 +49,10 @@ router.get('/recent', getRecentOrdersList);
 // Get order statistics (buyer only)
 router.get('/stats', restrictTo('buyer'), getOrderStats);
 
+// Artisan-specific routes
+router.get('/artisan/stats', restrictTo('artisan'), getArtisanStats);
+router.get('/artisan/revenue', restrictTo('artisan'), getArtisanRevenueData);
+
 // Get all orders for logged-in user (buyer or artisan)
 router.get('/', getMyOrders);
 
@@ -57,6 +64,9 @@ router.get('/:id', getOrder);
 
 // Update order status (artisan only)
 router.put('/:id/status', restrictTo('artisan'), updateStatus);
+
+// Reject order (artisan only)
+router.put('/:id/reject', restrictTo('artisan'), rejectOrderRequest);
 
 // Cancel order (buyer only)
 router.put('/:id/cancel', restrictTo('buyer'), cancelOrderRequest);

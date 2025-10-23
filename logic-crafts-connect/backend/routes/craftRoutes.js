@@ -32,7 +32,13 @@ import {
   getAllCraftsForAdmin,
   getPendingCraftsForAdmin,
   updateStatus,
-  deleteCraftByAdmin
+  deleteCraftByAdmin,
+  trackView,
+  saveACraft,
+  unsaveACraft,
+  checkSavedStatus,
+  getStats,
+  toggleVisibility
 } from '../controllers/craftController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
@@ -42,15 +48,35 @@ const router = express.Router();
 // PUBLIC ROUTES
 // ============================================
 router.get('/', getCrafts);              // Get all approved crafts
-router.get('/:id', getCraft);            // Get single craft by ID
 
 // ============================================
 // PROTECTED ROUTES (Login required)
 // ============================================
 router.post('/', protect, createNewCraft);           // Create new craft
-router.get('/my-crafts', protect, getMyCrafts);      // Get user's own crafts
+router.get('/my-crafts', protect, getMyCrafts);      // Get user's own crafts (MUST be before /:id)
+
+// ============================================
+// ARTISAN FEATURES
+// ============================================
+router.get('/artisan/stats', protect, restrictTo('artisan'), getStats);  // Get artisan statistics (MUST be before /:id)
+
+// ============================================
+// SPECIFIC ROUTES (MUST come before /:id)
+// ============================================
+router.get('/:id', getCraft);            // Get single craft by ID
 router.put('/:id', protect, updateCraftById);        // Update own craft
 router.delete('/:id', protect, deleteCraftById);     // Delete own craft
+
+// View tracking (public or authenticated)
+router.post('/:id/view', trackView);                 // Track craft view
+
+// Save/bookmark routes (authenticated users)
+router.post('/:id/save', protect, saveACraft);       // Save/bookmark craft
+router.delete('/:id/save', protect, unsaveACraft);   // Unsave craft
+router.get('/:id/saved', protect, checkSavedStatus); // Check if saved
+
+// Visibility toggle (artisan only)
+router.patch('/:id/visibility', protect, toggleVisibility); // Toggle craft visibility
 
 // ============================================
 // ADMIN ROUTES (Admin role required)

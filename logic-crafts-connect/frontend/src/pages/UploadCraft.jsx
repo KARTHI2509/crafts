@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
-// import { craftAPI } from '../utils/api';
+import axios from 'axios';
 
 export default function UploadCraft() {
   const { language } = useContext(LanguageContext);
@@ -95,27 +95,44 @@ export default function UploadCraft() {
     setUploading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const formData = new FormData();
-      // formData.append('title', form.title);
-      // formData.append('description', form.description);
-      // formData.append('category', form.category);
-      // formData.append('price', form.price);
-      // formData.append('location', form.location);
-      // formData.append('story', form.story);
-      // formData.append('image', form.image);
-      // 
-      // await craftAPI.create(formData);
-      
-      // Mock delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      console.log("Craft Submitted", form);
-      alert(t.successMsg);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login to upload crafts');
+        navigate('/login');
+        return;
+      }
+
+      // Prepare craft data
+      const craftData = {
+        name: form.title,
+        description: form.description,
+        category: form.category,
+        craft_type: form.category,
+        price: parseFloat(form.price),
+        location: form.location,
+        image_url: imagePreview || 'https://via.placeholder.com/400x300?text=Craft+Image',
+        images: imagePreview ? [imagePreview] : [],
+        story: form.story,
+        stock: 1,
+        delivery_days: 7,
+        is_new_arrival: true,
+        visibility: 'public', // Default visibility
+        status: 'approved' // Default status for immediate visibility
+      };
+
+      // Make API call to create craft
+      const response = await axios.post(
+        'http://localhost:5000/api/crafts',
+        craftData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("Craft Submitted", response.data);
+      alert('Craft uploaded successfully! It is now visible to all buyers.');
       navigate("/dashboard");
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload craft. Please try again.');
+      alert(error.response?.data?.message || 'Failed to upload craft. Please try again.');
     } finally {
       setUploading(false);
     }

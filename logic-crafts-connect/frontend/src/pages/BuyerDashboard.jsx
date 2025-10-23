@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { LanguageContext } from '../context/LanguageContext';
+import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import './BuyerDashboard.css';
 
@@ -18,7 +19,15 @@ const BuyerDashboard = () => {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [availableCrafts, setAvailableCrafts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    category: '',
+    artisan: '',
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest' // newest, price_low, price_high, popularity
+  });
 
   const text = {
     en: {
@@ -34,6 +43,8 @@ const BuyerDashboard = () => {
       unread: 'unread',
       recentOrders: 'Recent Orders',
       recommendedForYou: 'Recommended for You',
+      browseCrafts: 'Browse Available Crafts',
+      newArrivals: 'New Arrivals',
       viewAll: 'View All',
       viewOrder: 'View',
       addToCart: 'Add to Cart',
@@ -57,6 +68,8 @@ const BuyerDashboard = () => {
       unread: 'చదవలేదు',
       recentOrders: 'ఇటీవలి ఆర్డర్లు',
       recommendedForYou: 'మీ కోసం సిఫార్సు చేయబడింది',
+      browseCrafts: 'అందుబాటులో ఉన్న హస్తకళలను బ్రౌజ్ చేయండి',
+      newArrivals: 'కొత్త రాకలు',
       viewAll: 'అన్నీ చూడండి',
       viewOrder: 'చూడండి',
       addToCart: 'కార్ట్‌కు జోడించండి',
@@ -80,13 +93,13 @@ const BuyerDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      // Fetch stats in parallel
-      const [ordersRes, wishlistRes, cartRes, messagesRes, recommendationsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/orders/stats', config),
-        axios.get('http://localhost:5000/api/wishlist/count', config),
-        axios.get('http://localhost:5000/api/cart', config),
-        axios.get('http://localhost:5000/api/messages/unread-count', config),
-        axios.get('http://localhost:5000/api/recommendations/personalized?limit=4', config)
+      // Fetch stats and crafts data (don't fail if recommendations fail)
+      const [ordersRes, wishlistRes, cartRes, messagesRes, craftsRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/orders/stats', config).catch(() => ({ data: { data: { stats: { total: 0, pending: 0, completed: 0 } } } })),
+        axios.get('http://localhost:5000/api/wishlist/count', config).catch(() => ({ data: { data: { count: 0 } } })),
+        axios.get('http://localhost:5000/api/cart', config).catch(() => ({ data: { data: { total_items: 0 } } })),
+        axios.get('http://localhost:5000/api/messages/unread-count', config).catch(() => ({ data: { data: { unread_count: 0 } } })),
+        axios.get('http://localhost:5000/api/crafts?page=1&limit=8') // Fetch all available crafts
       ]);
 
       setStats({
@@ -96,11 +109,38 @@ const BuyerDashboard = () => {
         unreadMessages: messagesRes.data.data.unread_count
       });
 
-      setRecommendations(recommendationsRes.data.data.recommendations);
+      // Try to fetch recommendations, but don't fail if it errors
+      try {
+        const recommendationsRes = await axios.get('http://localhost:5000/api/recommendations/personalized?limit=4', config);
+        setRecommendations(recommendationsRes.data.data.recommendations || []);
+      } catch (recError) {
+        console.log('Recommendations not available, using crafts instead');
+        setRecommendations([]);
+      }
+
+      // Transform available crafts
+      const craftsData = craftsRes.data.data.crafts || [];
+      const transformedCrafts = craftsData.map(craft => ({
+        id: craft.id,
+        name: craft.name,
+        craftType: craft.craft_type || craft.category || 'Handmade',
+        price: `₹${craft.price || 0}`,
+        location: craft.location || craft.artisan_location || 'India',
+        imageUrl: craft.image_url || (craft.images && craft.images.length > 0 ? craft.images[0] : 'https://via.placeholder.com/400x300?text=No+Image'),
+        contact: craft.contact || craft.artisan_phone || '919876543210',
+        artisan: craft.artisan_name || 'Unknown Artisan',
+        verified: craft.status === 'approved',
+      }));
+      setAvailableCrafts(transformedCrafts);
 
       // Fetch recent orders
-      const recentOrdersRes = await axios.get('http://localhost:5000/api/orders?limit=5', config);
-      setRecentOrders(recentOrdersRes.data.data.orders);
+      try {
+        const recentOrdersRes = await axios.get('http://localhost:5000/api/orders?limit=5', config);
+        setRecentOrders(recentOrdersRes.data.data.orders || []);
+      } catch (orderError) {
+        console.log('No orders found');
+        setRecentOrders([]);
+      }
 
       setLoading(false);
     } catch (error) {
@@ -260,6 +300,72 @@ const BuyerDashboard = () => {
                   </button>
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Available Crafts - New Arrivals from Artisans */}
+      {availableCrafts.length > 0 && (
+        <section className="dashboard-section">
+          <div className="section-header">
+            <h2>{t.browseCrafts}</h2>
+            <button onClick={() => navigate('/explore')} className="view-all-btn">
+              {t.viewAll} →
+            </button>
+          </div>
+          
+          {/* Filters */}
+          <div className="filters-panel" style={{marginBottom: '20px'}}>
+            <div className="filters-grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}>
+              <div className="field">
+                <label>Category</label>
+                <select 
+                  className="input"
+                  value={filters.category}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                >
+                  <option value="">All Categories</option>
+                  <option value="Pottery">Pottery</option>
+                  <option value="Woodwork">Woodwork</option>
+                  <option value="Textiles">Textiles</option>
+                  <option value="Jewelry">Jewelry</option>
+                  <option value="Metalwork">Metalwork</option>
+                  <option value="Basketry">Basketry</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div className="field">
+                <label>Artisan</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Search artisan..."
+                  value={filters.artisan}
+                  onChange={(e) => setFilters({ ...filters, artisan: e.target.value })}
+                />
+              </div>
+              
+              <div className="field">
+                <label>Sort By</label>
+                <select 
+                  className="input"
+                  value={filters.sortBy}
+                  onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
+                  <option value="popularity">Popularity</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', marginTop: '20px'}}>
+            {availableCrafts.map(craft => (
+              <ProductCard key={craft.id} craft={craft} />
             ))}
           </div>
         </section>

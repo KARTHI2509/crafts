@@ -1,9 +1,20 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
+import ProductCard from '../components/ProductCard';
+import axios from 'axios';
 
 export default function Home() {
   const { language } = useContext(LanguageContext);
+  const [featuredCrafts, setFeaturedCrafts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNext: false,
+    hasPrev: false
+  });
   
   const content = {
     en: {
@@ -12,6 +23,9 @@ export default function Home() {
       exploreCrafts: "Explore Crafts",
       uploadCraft: "Upload Craft",
       whyChooseUs: "Why Choose Logic Crafts Connect?",
+      featuredCrafts: "Featured Crafts",
+      newArrivals: "New Arrivals from Our Artisans",
+      viewAllCrafts: "View All Crafts",
       empowerTitle: "Empower Local Artisans",
       empowerDesc: "Direct connection between artisans and buyers, eliminating middlemen and ensuring fair prices.",
       storytellingTitle: "Share Your Story",
@@ -40,6 +54,9 @@ export default function Home() {
       exploreCrafts: "హస్తకళలను అన్వేషించండి",
       uploadCraft: "హస్తకళను అప్‌లోడ్ చేయండి",
       whyChooseUs: "లాజిక్ క్రాఫ్ట్స్ కనెక్ట్‌ను ఎందుకు ఎంచుకోవాలి?",
+      featuredCrafts: "ఫీచర్ చేసిన హస్తకళలు",
+      newArrivals: "మా కళాకారుల నుండి కొత్త రాకలు",
+      viewAllCrafts: "అన్ని హస్తకళలను చూడండి",
       empowerTitle: "స్థానిక కళాకారులకు శక్తినివ్వండి",
       empowerDesc: "కళాకారులు మరియు కొనుగోలుదారుల మధ్య ప్రత్యక్ష సంబంధం, మధ్యవర్తులను తొలగించి న్యాయమైన ధరలను నిర్ధారిస్తుంది.",
       storytellingTitle: "మీ కథను పంచుకోండి",
@@ -65,6 +82,39 @@ export default function Home() {
   };
   
   const t = content[language] || content.en;
+  
+  // Fetch featured crafts on component mount
+  useEffect(() => {
+    const fetchFeaturedCrafts = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/crafts?page=1&limit=6');
+        const craftsData = response.data.data.crafts || [];
+        
+        // Transform and get first 6 crafts
+        const transformedCrafts = craftsData.map(craft => ({
+          id: craft.id,
+          name: craft.name,
+          craftType: craft.craft_type || craft.category || 'Handmade',
+          price: `₹${craft.price || 0}`,
+          location: craft.location || craft.artisan_location || 'India',
+          imageUrl: craft.image_url || (craft.images && craft.images.length > 0 ? craft.images[0] : 'https://via.placeholder.com/400x300?text=No+Image'),
+          contact: craft.contact || craft.artisan_phone || '919876543210',
+          artisan: craft.artisan_name || 'Unknown Artisan',
+          verified: craft.status === 'approved',
+        }));
+        
+        setFeaturedCrafts(transformedCrafts);
+        setPagination(response.data.data.pagination);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching featured crafts:', error);
+        setFeaturedCrafts([]);
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedCrafts();
+  }, []);
   
   return (
     <div className="home-page">
@@ -93,6 +143,25 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Featured Crafts Section */}
+      {!loading && featuredCrafts.length > 0 && (
+        <section className="featured-crafts-section">
+          <div className="container">
+            <h2 className="section-title">{t.newArrivals}</h2>
+            <div className="grid" style={{marginTop: '32px'}}>
+              {featuredCrafts.map((craft) => (
+                <ProductCard key={craft.id} craft={craft} />
+              ))}
+            </div>
+            <div style={{textAlign: 'center', marginTop: '32px'}}>
+              <Link to="/explore">
+                <button className="btn">{t.viewAllCrafts}</button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="features-section">

@@ -59,6 +59,7 @@ const BuyerOrders = () => {
     if (user && user.role === 'buyer') {
       fetchOrders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filter]);
 
   const fetchOrders = async () => {

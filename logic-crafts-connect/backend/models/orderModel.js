@@ -365,3 +365,87 @@ export const getRecentOrders = async (userId, limit = 5) => {
   const result = await pool.query(query, [userId, limit]);
   return result.rows;
 };
+
+/**
+ * Get artisan order statistics
+ * @param {number} artisanId - Artisan user ID
+ * @returns {Object} - Order statistics
+ */
+export const getArtisanOrderStats = async (artisanId) => {
+  const query = `
+    SELECT 
+      COUNT(*) as total_orders,
+      SUM(CASE WHEN status = 'placed' THEN 1 ELSE 0 END) as new_orders,
+      SUM(CASE WHEN status IN ('confirmed', 'processing') THEN 1 ELSE 0 END) as pending_orders,
+      SUM(CASE WHEN status IN ('shipped', 'out_for_delivery') THEN 1 ELSE 0 END) as shipped_orders,
+      SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as completed_orders,
+      SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders,
+      SUM(CASE WHEN status = 'delivered' THEN total_amount ELSE 0 END) as total_revenue,
+      COALESCE(AVG(CASE WHEN status = 'delivered' THEN total_amount END), 0) as average_order_value
+    FROM orders
+    WHERE artisan_id = $1
+  `;
+
+  const result = await pool.query(query, [artisanId]);
+  return result.rows[0];
+};
+
+/**
+ * Get artisan revenue by period
+ * @param {number} artisanId - Artisan user ID
+ * @param {string} period - Period (daily, weekly, monthly, yearly)
+ * @returns {Array} - Revenue data
+ */
+export const getArtisanRevenue = async (artisanId, period = 'monthly') => {
+  let dateFormat;
+  switch (period) {
+    case 'daily':
+      dateFormat = 'YYYY-MM-DD';
+      break;
+    case 'weekly':
+      dateFormat = 'IYYY-IW';
+      break;
+    case 'yearly':
+      dateFormat = 'YYYY';
+      break;
+    default:
+      dateFormat = 'YYYY-MM';
+  }
+
+  const query = `
+    SELECT 
+      TO_CHAR(created_at, $2) as period,
+      COUNT(*) as order_count,
+      SUM(total_amount) as revenue,
+      AVG(total_amount) as avg_order_value
+    FROM orders
+    WHERE artisan_id = $1 AND status = 'delivered'
+    GROUP BY TO_CHAR(created_at, $2)
+    ORDER BY period DESC
+    LIMIT 12
+  `;
+
+  const result = await pool.query(query, [artisanId, dateFormat]);
+  return result.rows;
+};
+
+/**
+ * Reject order with reason
+ * @param {number} orderId - Order ID
+ * @param {number} artisanId - Artisan ID
+ * @param {string} reason - Rejection reason
+ * @returns {Object} - Updated order
+ */
+export const rejectOrder = async (orderId, artisanId, reason) => {
+  const query = `
+    UPDATE orders
+    SET status = 'cancelled',
+        cancellation_reason = $1,
+        cancelled_at = CURRENT_TIMESTAMP
+    WHERE id = $2 AND artisan_id = $3 AND status IN ('placed', 'confirmed')
+    RETURNING *
+  `;
+
+  const result = await pool.query(query, [reason, orderId, artisanId]);
+  return result.rows[0];
+};

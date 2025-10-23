@@ -12,9 +12,15 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import UploadCraft from './pages/UploadCraft';
+import UploadCraftEnhanced from './pages/UploadCraftEnhanced';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ArtisanDashboard from './pages/ArtisanDashboard';
+import ArtisanCrafts from './pages/ArtisanCrafts';
+import ArtisanOrders from './pages/ArtisanOrders';
+import ArtisanOrderDetails from './pages/ArtisanOrderDetails';
+import ArtisanMessages from './pages/ArtisanMessages';
+import ArtisanAnalytics from './pages/ArtisanAnalytics';
 import BuyerDashboard from './pages/BuyerDashboard';
 import AdminDashboard_Role from './pages/AdminDashboard_Role';
 import ArtisanProfile from './pages/ArtisanProfile';
@@ -22,6 +28,7 @@ import Events from './pages/Events';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import BuyerOrders from './pages/BuyerOrders';
+import OrderDetails from './pages/OrderDetails';
 
 function App() {
   const { user, logout } = useAuth();
@@ -66,6 +73,15 @@ function App() {
                 </RoleBasedRoute>
               } 
             />
+            
+            <Route 
+              path="/buyer/orders/:orderId" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <OrderDetails />
+                </RoleBasedRoute>
+              } 
+            />
 
             {/* Protected Routes - Require Authentication */}
             <Route 
@@ -76,6 +92,15 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            <Route 
+              path="/upload-craft-enhanced" 
+              element={
+                <ProtectedRoute>
+                  <UploadCraftEnhanced />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Role-Based Routes - Artisan Dashboard */}
             <Route 
@@ -83,6 +108,51 @@ function App() {
               element={
                 <RoleBasedRoute role="artisan">
                   <ArtisanDashboard />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/crafts" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanCrafts />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/orders" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanOrders />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/orders/:orderId" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanOrderDetails />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/messages" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanMessages />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/analytics" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanAnalytics />
                 </RoleBasedRoute>
               } 
             />

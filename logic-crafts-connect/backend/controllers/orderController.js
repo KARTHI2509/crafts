@@ -20,7 +20,10 @@ import {
   returnOrder,
   updateTracking,
   getBuyerOrderStats,
-  getRecentOrders
+  getRecentOrders,
+  getArtisanOrderStats,
+  getArtisanRevenue,
+  rejectOrder
 } from '../models/orderModel.js';
 import { clearCart } from '../models/cartModel.js';
 
@@ -373,6 +376,101 @@ export const getRecentOrdersList = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching recent orders',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get artisan order statistics
+ * @route   GET /api/orders/artisan/stats
+ * @access  Private (Artisan only)
+ */
+export const getArtisanStats = async (req, res) => {
+  try {
+    const artisanId = req.user.id;
+    const stats = await getArtisanOrderStats(artisanId);
+
+    res.status(200).json({
+      success: true,
+      data: { stats }
+    });
+  } catch (error) {
+    console.error('Get artisan stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching artisan statistics',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get artisan revenue data
+ * @route   GET /api/orders/artisan/revenue
+ * @access  Private (Artisan only)
+ */
+export const getArtisanRevenueData = async (req, res) => {
+  try {
+    const artisanId = req.user.id;
+    const period = req.query.period || 'monthly';
+
+    const revenue = await getArtisanRevenue(artisanId, period);
+
+    res.status(200).json({
+      success: true,
+      count: revenue.length,
+      data: { revenue }
+    });
+  } catch (error) {
+    console.error('Get revenue data error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching revenue data',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Reject order (Artisan only)
+ * @route   PUT /api/orders/:id/reject
+ * @access  Private (Artisan only)
+ */
+export const rejectOrderRequest = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const artisanId = req.user.id;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason is required'
+      });
+    }
+
+    const order = await rejectOrder(orderId, artisanId, reason);
+
+    if (!order) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be rejected (not found, already processed, or not your order)'
+      });
+    }
+
+    // TODO: Send notification to buyer
+
+    res.status(200).json({
+      success: true,
+      message: 'Order rejected successfully',
+      data: { order }
+    });
+  } catch (error) {
+    console.error('Reject order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error rejecting order',
       error: error.message
     });
   }

@@ -1,14 +1,21 @@
 import React, { useEffect, useState, useContext } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 import ProductCard from '../components/ProductCard';
-// import { craftAPI } from '../utils/api';
+import axios from 'axios';
 
 export default function Explore() {
   const { language } = useContext(LanguageContext);
   const [crafts, setCrafts] = useState([]);
   const [filteredCrafts, setFilteredCrafts] = useState([]);
-  const [filters, setFilters] = useState({ category: '', location: '', artisan: '', verifiedOnly: false });
+  const [filters, setFilters] = useState({ category: '', location: '', artisan: '', verifiedOnly: false, search: '' });
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNext: false,
+    hasPrev: false
+  });
 
   const content = {
     en: {
@@ -44,117 +51,55 @@ export default function Explore() {
   const t = content[language] || content.en;
 
   useEffect(() => {
-    // TODO: Replace with actual API call
-    // craftAPI.getAll()
-    //   .then(data => {
-    //     setCrafts(data.crafts);
-    //     setFilteredCrafts(data.crafts);
-    //   })
-    //   .catch(err => console.error(err))
-    //   .finally(() => setLoading(false));
+    // Fetch real crafts from backend
+    const fetchCrafts = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/crafts?page=${pagination.currentPage}&limit=12`);
+        const craftsData = response.data.data.crafts || [];
+        
+        // Transform data to match expected format
+        const transformedCrafts = craftsData.map(craft => ({
+          id: craft.id,
+          name: craft.name,
+          craftType: craft.craft_type || craft.category || 'Handmade',
+          price: `₹${craft.price || 0}`,
+          location: craft.location || craft.artisan_location || 'India',
+          imageUrl: craft.image_url || (craft.images && craft.images.length > 0 ? craft.images[0] : 'https://via.placeholder.com/400x300?text=No+Image'),
+          contact: craft.contact || craft.artisan_phone || '919876543210',
+          artisan: craft.artisan_name || 'Unknown Artisan',
+          verified: craft.status === 'approved',
+        }));
+        
+        setCrafts(transformedCrafts);
+        setFilteredCrafts(transformedCrafts);
+        setPagination(response.data.data.pagination);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching crafts:', error);
+        // Fallback to empty array on error
+        setCrafts([]);
+        setFilteredCrafts([]);
+        setLoading(false);
+      }
+    };
 
-    // Mock data with verified status
-    const mockCraftsData = [
-      { 
-        id: 1, 
-        name: 'Handmade Pottery', 
-        craftType: 'Pottery', 
-        price: '₹500', 
-        location: 'Jaipur', 
-        imageUrl: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=300&fit=crop',
-        contact: '919876543210',
-        artisan: 'Rajesh Kumar',
-        verified: true,
-      },
-      { 
-        id: 2, 
-        name: 'Wood Carving', 
-        craftType: 'Woodwork', 
-        price: '₹1200', 
-        location: 'Kerala', 
-        imageUrl: 'https://images.unsplash.com/photo-1615397349754-5e6d2e18b0b8?w=400&h=300&fit=crop',
-        contact: '919876543211',
-        artisan: 'Suresh Nair',
-        verified: true,
-      },
-      { 
-        id: 3, 
-        name: 'Bead Jewelry', 
-        craftType: 'Jewelry', 
-        price: '₹350', 
-        location: 'Mumbai', 
-        imageUrl: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=300&fit=crop',
-        contact: '919876543212',
-        artisan: 'Anjali Mehta',
-        verified: false,
-      },
-      { 
-        id: 4, 
-        name: 'Handwoven Basket', 
-        craftType: 'Basketry', 
-        price: '₹600', 
-        location: 'Assam', 
-        imageUrl: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=400&h=300&fit=crop',
-        contact: '919876543213',
-        artisan: 'Priya Sharma',
-        verified: true,
-      },
-      { 
-        id: 5, 
-        name: 'Clay Lamp', 
-        craftType: 'Pottery', 
-        price: '₹200', 
-        location: 'Delhi', 
-        imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400&h=300&fit=crop',
-        contact: '919876543214',
-        artisan: 'Ramesh Singh',
-        verified: true,
-      },
-      { 
-        id: 6, 
-        name: 'Silk Scarf', 
-        craftType: 'Textiles', 
-        price: '₹950', 
-        location: 'andhra pradesh', 
-        imageUrl: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400&h=300&fit=crop',
-        contact: '919876543215',
-        artisan: 'Lakshmi Devi',
-        verified: true,
-      },
-      { 
-        id: 7, 
-        name: 'Brass Statue', 
-        craftType: 'Metalwork', 
-        price: '₹2500', 
-        location: 'Jaipur', 
-        imageUrl: 'https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=400&h=300&fit=crop',
-        contact: '919876543216',
-        artisan: 'Vikram Patel',
-        verified: true,
-      },
-      { 
-        id: 8, 
-        name: 'Embroidered Cushion', 
-        craftType: 'Textiles', 
-        price: '₹850', 
-        location: 'Lucknow', 
-        imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&fit=crop',
-        contact: '919876543217',
-        artisan: 'Fatima Khan',
-        verified: false,
-      },
-    ];
-
-    setTimeout(() => {
-      setCrafts(mockCraftsData);
-      setFilteredCrafts(mockCraftsData);
-      setLoading(false);
-    }, 500);
-  }, []);
+    fetchCrafts();
+  }, [pagination.currentPage]);
 
   // Apply filters whenever filter state changes
   useEffect(() => {
     let filtered = crafts;
+
+    // Apply search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      filtered = filtered.filter(craft => 
+        craft.name.toLowerCase().includes(searchTerm) ||
+        craft.artisan.toLowerCase().includes(searchTerm) ||
+        craft.craftType.toLowerCase().includes(searchTerm) ||
+        craft.location.toLowerCase().includes(searchTerm)
+      );
+    }
 
     if (filters.category) {
       filtered = filtered.filter(c => c.craftType === filters.category);
@@ -243,6 +188,17 @@ export default function Explore() {
             />
           </div>
 
+          <div className="field">
+            <label>Search</label>
+            <input
+              type="text"
+              className="input"
+              placeholder="Search crafts, artisans..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            />
+          </div>
+
           <div className="field" style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px'}}>
             <input
               type="checkbox"
@@ -292,6 +248,31 @@ export default function Explore() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="pagination" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', margin: '32px 0' }}>
+          <button 
+            className="btn secondary" 
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+            disabled={!pagination.hasPrev}
+          >
+            ← Previous
+          </button>
+          
+          <span style={{ margin: '0 12px' }}>
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </span>
+          
+          <button 
+            className="btn secondary" 
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+            disabled={!pagination.hasNext}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -184,8 +184,20 @@ export default function ArtisanDashboard() {
       {/* Quick Actions */}
       <div className="panel" style={{marginTop: '20px', marginBottom: '24px'}}>
         <div className="row" style={{gap: '12px', flexWrap: 'wrap'}}>
-          <Link to="/upload">
+          <Link to="/upload-craft-enhanced">
             <button className="btn">{t.uploadNew}</button>
+          </Link>
+          <Link to="/artisan/crafts">
+            <button className="btn secondary">📦 Manage My Crafts</button>
+          </Link>
+          <Link to="/artisan/orders">
+            <button className="btn secondary">🛒 Manage Orders</button>
+          </Link>
+          <Link to="/artisan/messages">
+            <button className="btn secondary">💬 Messages</button>
+          </Link>
+          <Link to="/artisan/analytics">
+            <button className="btn secondary">📈 Analytics</button>
           </Link>
           <Link to="/explore">
             <button className="btn secondary">{t.browseCrafts}</button>
