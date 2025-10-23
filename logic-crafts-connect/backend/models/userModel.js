@@ -1,23 +1,61 @@
+import mongoose from 'mongoose';
 
-import pool from '../config/db.js';
+/**
+ * User Schema for MongoDB
+ */
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Please provide a name'],
+    trim: true
+  },
+  email: {
+    type: String,
+    required: [true, 'Please provide an email'],
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: [true, 'Please provide a password']
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
+  location: {
+    type: String,
+    trim: true
+  },
+  role: {
+    type: String,
+    enum: ['artisan', 'buyer', 'admin'],
+    default: 'artisan'
+  }
+}, {
+  timestamps: true // Adds createdAt and updatedAt automatically
+});
+
+// Create User model
+const User = mongoose.model('User', userSchema);
 
 /**
  * Create a new user in the database
- * @param {Object} userData - User data {name, email, password, phone, location}
+ * @param {Object} userData - User data {name, email, password, phone, location, role}
  * @returns {Object} - Created user object
  */
 export const createUser = async (userData) => {
-  const { name, email, password, phone, location, role = 'artisan' } = userData;
-  
-  const query = `
-    INSERT INTO users (name, email, password, phone, location, role)
-    VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING id, name, email, role, phone, location, created_at
-  `;
-  
-  const values = [name, email, password, phone, location, role];
-  const result = await pool.query(query, values);
-  return result.rows[0];
+  const user = await User.create(userData);
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    location: user.location,
+    created_at: user.createdAt
+  };
 };
 
 /**
@@ -26,58 +64,77 @@ export const createUser = async (userData) => {
  * @returns {Object|null} - User object or null
  */
 export const findUserByEmail = async (email) => {
-  const query = 'SELECT * FROM users WHERE email = $1';
-  const result = await pool.query(query, [email]);
-  return result.rows[0] || null;
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) return null;
+  
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    password: user.password, // Include for authentication
+    role: user.role,
+    phone: user.phone,
+    location: user.location,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt
+  };
 };
 
 /**
  * Find user by ID
- * @param {number} id - User ID
+ * @param {string} id - User ID
  * @returns {Object|null} - User object without password
  */
 export const findUserById = async (id) => {
-  const query = `
-    SELECT id, name, email, role, phone, location, created_at, updated_at
-    FROM users 
-    WHERE id = $1
-  `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  const user = await User.findById(id).select('-password');
+  if (!user) return null;
+  
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    location: user.location,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt
+  };
 };
 
 /**
  * Update user information
- * @param {number} id - User ID
+ * @param {string} id - User ID
  * @param {Object} updates - Fields to update
  * @returns {Object} - Updated user object
  */
 export const updateUser = async (id, updates) => {
-  const { name, phone, location } = updates;
+  const user = await User.findByIdAndUpdate(
+    id,
+    { $set: updates },
+    { new: true, runValidators: true }
+  ).select('-password');
   
-  const query = `
-    UPDATE users 
-    SET name = COALESCE($1, name),
-        phone = COALESCE($2, phone),
-        location = COALESCE($3, location)
-    WHERE id = $4
-    RETURNING id, name, email, role, phone, location, updated_at
-  `;
+  if (!user) return null;
   
-  const values = [name, phone, location, id];
-  const result = await pool.query(query, values);
-  return result.rows[0];
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    location: user.location,
+    updated_at: user.updatedAt
+  };
 };
 
 /**
  * Delete user by ID
- * @param {number} id - User ID
+ * @param {string} id - User ID
  * @returns {boolean} - Success status
  */
 export const deleteUser = async (id) => {
-  const query = 'DELETE FROM users WHERE id = $1';
-  const result = await pool.query(query, [id]);
-  return result.rowCount > 0;
+  const result = await User.findByIdAndDelete(id);
+  return result !== null;
 };
 
 /**
@@ -85,11 +142,17 @@ export const deleteUser = async (id) => {
  * @returns {Array} - Array of user objects
  */
 export const getAllUsers = async () => {
-  const query = `
-    SELECT id, name, email, role, phone, location, created_at
-    FROM users
-    ORDER BY created_at DESC
-  `;
-  const result = await pool.query(query);
-  return result.rows;
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
+  
+  return users.map(user => ({
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    location: user.location,
+    created_at: user.createdAt
+  }));
 };
+
+export default User;

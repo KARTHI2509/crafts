@@ -13,6 +13,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import craftRoutes from './routes/craftRoutes.js';
@@ -25,8 +27,12 @@ import wishlistRoutes from './routes/wishlistRoutes.js';
 import recentlyViewedRoutes from './routes/recentlyViewedRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
 
-// Load environment variables from .env file
-dotenv.config();
+// Get current directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env file in parent directory
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Initialize Express app
 const app = express();
@@ -61,11 +67,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Body parser - Parse JSON request bodies
-app.use(express.json());
+// Body parser - Parse JSON request bodies (50mb limit for base64 images)
+app.use(express.json({ limit: '50mb' }));
 
-// Body parser - Parse URL-encoded data
-app.use(express.urlencoded({ extended: true }));
+// Body parser - Parse URL-encoded data (50mb limit for base64 images)
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging (simple development logger)
 app.use((req, res, next) => {
