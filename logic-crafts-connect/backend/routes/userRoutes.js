@@ -3,15 +3,6 @@
  * USER ROUTES
  * ============================================
  * Defines user-related routes
- * 
- * Public routes:
- * - GET /api/users/:id - Get user profile by ID
- * 
- * Protected routes:
- * - PUT /api/users/profile - Update own profile
- * 
- * Admin routes:
- * - GET /api/users - Get all users
  */
 
 import express from 'express';
@@ -20,17 +11,37 @@ import {
   updateUserProfile,
   getUsers
 } from '../controllers/userController.js';
+
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
-router.get('/:id', getUserProfile);
+/**
+ * ============================================
+ * PROTECTED ROUTES
+ * ============================================
+ */
 
-// Protected routes (login required)
+// Update logged-in user profile
 router.put('/profile', protect, updateUserProfile);
 
-// Admin routes
+/**
+ * ============================================
+ * ADMIN ROUTES
+ * ============================================
+ */
+
+// Get all users
 router.get('/', protect, restrictTo('admin'), getUsers);
+
+/**
+ * ============================================
+ * PUBLIC ROUTES
+ * ============================================
+ */
+
+// Get user profile by ID
+// Keep this LAST
+router.get('/:id', getUserProfile);
 
 export default router;

@@ -1,75 +1,80 @@
-/* Buyer Dashboard Styles */
+/* =====================================
+   Buyer Dashboard Page
+===================================== */
 .buyer-dashboard {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
+/* =====================================
+   Dashboard Header
+===================================== */
 .dashboard-header {
   margin-bottom: 2rem;
 }
 
 .dashboard-header h1 {
-  color: #8b5a2b;
+  color: var(--primary);
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #8b5a2b;
+  color: var(--primary);
   font-size: 1.2rem;
 }
 
-/* Stats Grid */
+/* =====================================
+   Stats Grid
+===================================== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
 
 .stat-card {
   background: white;
-  border: 2px solid #d4a574;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1.5rem;
   display: flex;
   gap: 1rem;
   cursor: pointer;
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(139, 90, 43, 0.2);
-  border-color: #8b5a2b;
+  transform: translateY(-6px);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
 }
 
 .stat-icon {
-  font-size: 3rem;
-  line-height: 1;
-}
-
-.stat-content {
-  flex: 1;
+  width: 60px;
+  height: 60px;
+  background: var(--secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
 }
 
 .stat-content h3 {
   color: #666;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.85rem;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
 }
 
 .stat-number {
-  color: #8b5a2b;
-  font-size: 2.5rem;
+  color: var(--primary);
+  font-size: 2.2rem;
   font-weight: 700;
-  line-height: 1;
-  margin-bottom: 0.5rem;
 }
 
 .stat-details {
@@ -79,13 +84,15 @@
   gap: 1rem;
 }
 
-/* Dashboard Sections */
+/* =====================================
+   Dashboard Sections
+===================================== */
 .dashboard-section {
   background: white;
-  border: 2px solid #d4a574;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
+  box-shadow: var(--shadow);
 }
 
 .section-header {
@@ -96,27 +103,27 @@
 }
 
 .section-header h2 {
-  color: #8b5a2b;
+  color: var(--primary);
   font-size: 1.5rem;
-  font-weight: 600;
 }
 
 .view-all-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: #8b5a2b;
-  font-size: 1rem;
-  font-weight: 500;
+  color: var(--primary);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .view-all-btn:hover {
-  color: #d4a574;
-  transform: translateX(5px);
+  transform: translateX(4px);
+  color: var(--accent);
 }
 
-/* Empty State */
+/* =====================================
+   Empty State
+===================================== */
 .empty-state {
   text-align: center;
   padding: 3rem;
@@ -124,28 +131,28 @@
 }
 
 .empty-state p {
-  font-size: 1.1rem;
+  font-size: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .primary-btn {
-  background: #8b5a2b;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  border-radius: 8px;
+  padding: 0.8rem 2rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .primary-btn:hover {
-  background: #6d4522;
+  background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 90, 43, 0.3);
 }
 
-/* Orders List */
+/* =====================================
+   Orders List
+===================================== */
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -153,24 +160,24 @@
 }
 
 .order-item {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .order-item:hover {
-  border-color: #d4a574;
-  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.1);
+  background: white;
+  box-shadow: var(--shadow);
 }
 
 .order-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .order-number {
@@ -178,14 +185,16 @@
   color: #333;
 }
 
+/* Order Status */
 .order-status {
-  padding: 0.25rem 0.75rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.8rem;
   width: fit-content;
+  font-weight: 600;
 }
 
+/* Status Colors */
 .status-placed {
   background: #fff3cd;
   color: #856404;
@@ -193,56 +202,56 @@
 
 .status-confirmed,
 .status-processing {
-  background: #cce5ff;
-  color: #004085;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .status-shipped,
 .status-out_for_delivery {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #cffafe;
+  color: #155e75;
 }
 
 .status-delivered {
-  background: #d4edda;
-  color: #155724;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .status-cancelled,
 .status-returned {
-  background: #f8d7da;
-  color: #721c24;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .order-details {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  color: #666;
-  font-size: 0.9rem;
 }
 
 .order-total {
-  font-weight: 600;
-  color: #8b5a2b;
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .view-order-btn {
-  background: #d4a574;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 0.5rem 1.5rem;
-  border-radius: 6px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .view-order-btn:hover {
-  background: #8b5a2b;
+  background: var(--accent);
   transform: translateY(-2px);
 }
 
-/* Recommendations Grid */
+/* =====================================
+   Recommendations Grid
+===================================== */
 .recommendations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -251,34 +260,32 @@
 
 .recommendation-card {
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
 }
 
 .recommendation-card:hover {
-  border-color: #d4a574;
-  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.15);
-  transform: translateY(-5px);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.1);
 }
 
 .recommendation-image {
   width: 100%;
   height: 200px;
   overflow: hidden;
-  background: #f5f5f5;
 }
 
 .recommendation-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
 }
 
-.recommendation-card:hover .recommendation-image img {
-  transform: scale(1.1);
+.recommendation-card:hover img {
+  transform: scale(1.08);
 }
 
 .recommendation-content {
@@ -288,18 +295,13 @@
 .recommendation-content h3 {
   color: #333;
   font-size: 1rem;
-  font-weight: 600;
   margin-bottom: 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .recommendation-content .price {
-  color: #8b5a2b;
-  font-size: 1.25rem;
+  color: var(--primary);
+  font-size: 1.2rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
 }
 
 .recommendation-content .rating {
@@ -310,48 +312,34 @@
 
 .add-to-cart-btn {
   width: 100%;
-  background: #8b5a2b;
+  background: var(--primary);
   color: white;
   border: none;
   padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .add-to-cart-btn:hover {
-  background: #6d4522;
+  background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 90, 43, 0.3);
 }
 
-/* Responsive Design */
+/* =====================================
+   Responsive
+===================================== */
 @media (max-width: 768px) {
   .buyer-dashboard {
     padding: 1rem;
   }
 
   .dashboard-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .stat-card {
-    padding: 1rem;
-  }
-
-  .stat-icon {
-    font-size: 2rem;
-  }
-
-  .stat-number {
-    font-size: 1.8rem;
   }
 
   .dashboard-section {
@@ -376,15 +364,11 @@
 
   .recommendations-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .stats-grid,
   .recommendations-grid {
     grid-template-columns: 1fr;
   }

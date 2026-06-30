@@ -1,50 +1,37 @@
-/**
- * ============================================
- * CART CONTROLLER
- * ============================================
- * Handles shopping cart HTTP requests
- * - Get cart
- * - Add items
- * - Update quantities
- * - Remove items
- * - Clear cart
- */
-
-import {
-  getCartItems,
-  getCartSummary,
-  addToCart,
-  updateCartQuantity,
-  removeFromCart,
-  removeFromCartByCraft,
-  clearCart,
-  isInCart,
-  getCartByArtisan,
-  validateCart
-} from '../models/cartModel.js';
+import User from '../models/User.js';
 
 /**
- * @desc    Get cart items for logged-in buyer
- * @route   GET /api/cart
- * @access  Private (Buyer only)
+ * Get cart
  */
 export const getCart = async (req, res) => {
   try {
-    const buyerId = req.user.id;
+    const user = await User.findById(req.user.id)
+      .populate('cart.craft_id');
 
-    const items = await getCartItems(buyerId);
-    const summary = await getCartSummary(buyerId);
+    const items = user.cart;
+
+    let totalPrice = 0;
+    let totalQuantity = 0;
+
+    items.forEach(item => {
+      totalQuantity += item.quantity;
+      totalPrice += item.quantity * item.craft_id.price;
+    });
 
     res.status(200).json({
       success: true,
       count: items.length,
       data: {
         items,
-        summary
+        summary: {
+          item_count: items.length,
+          total_quantity: totalQuantity,
+          total_price: totalPrice
+        }
       }
     });
+
   } catch (error) {
-    console.error('Get cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching cart',
@@ -54,40 +41,38 @@ export const getCart = async (req, res) => {
 };
 
 /**
- * @desc    Add item to cart
- * @route   POST /api/cart
- * @access  Private (Buyer only)
+ * Add item to cart
  */
 export const addItemToCart = async (req, res) => {
   try {
-    const buyerId = req.user.id;
     const { craft_id, quantity } = req.body;
-
-    if (!craft_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Craft ID is required'
-      });
-    }
 
     const qty = parseInt(quantity) || 1;
 
-    if (qty <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity must be greater than 0'
+    const user = await User.findById(req.user.id);
+
+    const existingItem = user.cart.find(
+      item => item.craft_id.toString() === craft_id
+    );
+
+    if (existingItem) {
+      existingItem.quantity += qty;
+    } else {
+      user.cart.push({
+        craft_id,
+        quantity: qty
       });
     }
 
-    const cartItem = await addToCart(buyerId, craft_id, qty);
+    await user.save();
 
     res.status(201).json({
       success: true,
       message: 'Item added to cart',
-      data: { cartItem }
+      data: { cart: user.cart }
     });
+
   } catch (error) {
-    console.error('Add to cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error adding item to cart',
@@ -97,41 +82,37 @@ export const addItemToCart = async (req, res) => {
 };
 
 /**
- * @desc    Update cart item quantity
- * @route   PUT /api/cart/:id
- * @access  Private (Buyer only)
+ * Update quantity
  */
 export const updateCart = async (req, res) => {
   try {
-    const buyerId = req.user.id;
-    const cartId = req.params.id;
     const { quantity } = req.body;
 
-    if (quantity === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity is required'
-      });
-    }
+    const user = await User.findById(req.user.id);
 
-    const qty = parseInt(quantity);
+    const item = user.cart.id(req.params.id);
 
-    const cartItem = await updateCartQuantity(cartId, buyerId, qty);
-
-    if (!cartItem) {
+    if (!item) {
       return res.status(404).json({
         success: false,
-        message: 'Cart item not found or removed'
+        message: 'Cart item not found'
       });
     }
+
+    if (quantity <= 0) {
+      item.deleteOne();
+    } else {
+      item.quantity = quantity;
+    }
+
+    await user.save();
 
     res.status(200).json({
       success: true,
-      message: qty === 0 ? 'Item removed from cart' : 'Cart updated',
-      data: { cartItem }
+      message: 'Cart updated'
     });
+
   } catch (error) {
-    console.error('Update cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating cart',
@@ -141,55 +122,49 @@ export const updateCart = async (req, res) => {
 };
 
 /**
- * @desc    Remove item from cart
- * @route   DELETE /api/cart/:id
- * @access  Private (Buyer only)
+ * Remove item
  */
 export const removeCartItem = async (req, res) => {
   try {
-    const buyerId = req.user.id;
-    const cartId = req.params.id;
+    const user = await User.findById(req.user.id);
 
-    const success = await removeFromCart(cartId, buyerId);
+    user.cart = user.cart.filter(
+      item => item._id.toString() !== req.params.id
+    );
 
-    if (!success) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart item not found'
-      });
-    }
+    await user.save();
 
     res.status(200).json({
       success: true,
       message: 'Item removed from cart'
     });
+
   } catch (error) {
-    console.error('Remove from cart error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error removing item from cart',
+      message: 'Error removing item',
       error: error.message
     });
   }
 };
 
 /**
- * @desc    Clear entire cart
- * @route   DELETE /api/cart
- * @access  Private (Buyer only)
+ * Clear cart
  */
 export const clearCartItems = async (req, res) => {
   try {
-    const buyerId = req.user.id;
+    const user = await User.findById(req.user.id);
 
-    const success = await clearCart(buyerId);
+    user.cart = [];
+
+    await user.save();
 
     res.status(200).json({
       success: true,
-      message: success ? 'Cart cleared successfully' : 'Cart was already empty'
+      message: 'Cart cleared successfully'
     });
+
   } catch (error) {
-    console.error('Clear cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error clearing cart',
@@ -199,16 +174,15 @@ export const clearCartItems = async (req, res) => {
 };
 
 /**
- * @desc    Check if item is in cart
- * @route   GET /api/cart/check/:craftId
- * @access  Private (Buyer only)
+ * Check if in cart
  */
 export const checkInCart = async (req, res) => {
   try {
-    const buyerId = req.user.id;
-    const craftId = req.params.craftId;
+    const user = await User.findById(req.user.id);
 
-    const cartItem = await isInCart(buyerId, craftId);
+    const cartItem = user.cart.find(
+      item => item.craft_id.toString() === req.params.craftId
+    );
 
     res.status(200).json({
       success: true,
@@ -217,8 +191,8 @@ export const checkInCart = async (req, res) => {
         cartItem: cartItem || null
       }
     });
+
   } catch (error) {
-    console.error('Check in cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error checking cart',
@@ -228,23 +202,44 @@ export const checkInCart = async (req, res) => {
 };
 
 /**
- * @desc    Get cart grouped by artisan (for checkout)
- * @route   GET /api/cart/grouped
- * @access  Private (Buyer only)
+ * Grouped cart by artisan
  */
 export const getGroupedCart = async (req, res) => {
   try {
-    const buyerId = req.user.id;
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: 'cart.craft_id',
+        populate: {
+          path: 'user_id'
+        }
+      });
 
-    const groupedCart = await getCartByArtisan(buyerId);
+    const grouped = {};
+
+    user.cart.forEach(item => {
+      const artisanId = item.craft_id.user_id._id.toString();
+
+      if (!grouped[artisanId]) {
+        grouped[artisanId] = {
+          artisan: item.craft_id.user_id,
+          items: [],
+          artisan_total: 0
+        };
+      }
+
+      grouped[artisanId].items.push(item);
+      grouped[artisanId].artisan_total +=
+        item.quantity * item.craft_id.price;
+    });
 
     res.status(200).json({
       success: true,
-      count: groupedCart.length,
-      data: { groupedCart }
+      data: {
+        groupedCart: Object.values(grouped)
+      }
     });
+
   } catch (error) {
-    console.error('Get grouped cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching grouped cart',
@@ -254,22 +249,32 @@ export const getGroupedCart = async (req, res) => {
 };
 
 /**
- * @desc    Validate cart items
- * @route   GET /api/cart/validate
- * @access  Private (Buyer only)
+ * Validate cart
  */
 export const validateCartItems = async (req, res) => {
   try {
-    const buyerId = req.user.id;
+    const user = await User.findById(req.user.id)
+      .populate('cart.craft_id');
 
-    const validation = await validateCart(buyerId);
+    const unavailableItems = user.cart.filter(
+      item => item.craft_id.status !== 'approved'
+    );
+
+    const availableItems = user.cart.filter(
+      item => item.craft_id.status === 'approved'
+    );
 
     res.status(200).json({
       success: true,
-      data: validation
+      data: {
+        valid: unavailableItems.length === 0,
+        unavailableItems,
+        availableItems,
+        total_items: user.cart.length
+      }
     });
+
   } catch (error) {
-    console.error('Validate cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Error validating cart',

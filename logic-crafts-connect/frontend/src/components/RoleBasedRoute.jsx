@@ -1,84 +1,168 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * RoleBasedRoute Component
- * Checks if authenticated user has the required role
- * Supports: 'artisan', 'buyer', 'admin'
- * Shows access denied message or redirects if role doesn't match
+ *
+ * Purpose:
+ * - Protects routes based on user role
+ * - Allows access only if the logged-in user has the required role
+ * - Supports roles: artisan, buyer, admin
+ * - Can show "Access Denied" page or redirect
  */
-const RoleBasedRoute = ({ children, role, showAccessDenied = true }) => {
+const RoleBasedRoute = ({
+  children,
+  role,
+  showAccessDenied = true,
+}) => {
+  // Get user data, role checker, and loading state from AuthContext
   const { user, hasRole, loading } = useAuth();
 
-  // Show loading spinner while checking auth
+  // -----------------------------------
+  // Show loading while checking authentication
+  // -----------------------------------
   if (loading) {
     return (
-      <div className="loading-container" style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '60vh',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
-        <div className="spinner" style={{
-          border: '4px solid var(--bg-light)',
-          borderTop: '4px solid var(--primary)',
-          borderRadius: '50%',
-          width: '50px',
-          height: '50px',
-          animation: 'spin 1s linear infinite'
-        }}></div>
-        <p style={{ color: 'var(--muted)' }}>Verifying access...</p>
+      <div
+        className="loading-container"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+      >
+        {/* Spinner */}
+        <div
+          className="spinner"
+          style={{
+            border: "4px solid var(--bg-light)",
+            borderTop: "4px solid var(--primary)",
+            borderRadius: "50%",
+            width: "50px",
+            height: "50px",
+            animation: "spin 1s linear infinite",
+          }}
+        ></div>
+
+        {/* Loading Text */}
+        <p style={{ color: "var(--muted)" }}>Verifying access...</p>
       </div>
     );
   }
 
-  // If no user, redirect to login
+  // -----------------------------------
+  // Redirect to login if no user found
+  // -----------------------------------
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user has the required role
-  // Support both exact role match and 'user' legacy role for backwards compatibility
-  const userHasRole = hasRole(role) || (user.role === 'user' && (role === 'artisan' || role === 'buyer'));
-  
+  // -----------------------------------
+  // Check if user has required role
+  // Legacy support:
+  // "user" role can act as artisan or buyer
+  // -----------------------------------
+  const userHasRole =
+    hasRole(role) ||
+    (user.role === "user" &&
+      (role === "artisan" || role === "buyer"));
+
+  // -----------------------------------
+  // If user does not have permission
+  // -----------------------------------
   if (!userHasRole) {
-    // Show access denied message or redirect based on preference
+    // Show access denied page
     if (showAccessDenied) {
       return (
-        <div className="container" style={{ padding: '64px 16px', textAlign: 'center' }}>
-          <div className="access-denied" style={{
-            background: 'var(--card-bg)',
-            padding: '48px 32px',
-            borderRadius: '12px',
-            boxShadow: 'var(--shadow)',
-            maxWidth: '600px',
-            margin: '0 auto',
-            border: '2px solid var(--danger)'
-          }}>
-            <div style={{ fontSize: '64px', marginBottom: '24px' }}>🚫</div>
-            <h2 style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '28px' }}>
+        <div
+          className="container"
+          style={{
+            padding: "64px 16px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            className="access-denied"
+            style={{
+              background: "var(--card-bg)",
+              padding: "48px 32px",
+              borderRadius: "12px",
+              boxShadow: "var(--shadow)",
+              maxWidth: "600px",
+              margin: "0 auto",
+              border: "2px solid var(--danger)",
+            }}
+          >
+            {/* Access Denied Icon */}
+            <div
+              style={{
+                fontSize: "64px",
+                marginBottom: "24px",
+              }}
+            >
+              🚫
+            </div>
+
+            {/* Heading */}
+            <h2
+              style={{
+                color: "var(--danger)",
+                marginBottom: "16px",
+                fontSize: "28px",
+              }}
+            >
               Access Denied
             </h2>
-            <p style={{ color: 'var(--muted)', marginBottom: '24px', fontSize: '16px' }}>
-              You don't have permission to access this page.
+
+            {/* Message */}
+            <p
+              style={{
+                color: "var(--muted)",
+                marginBottom: "24px",
+                fontSize: "16px",
+              }}
+            >
+              You do not have permission to access this page.
             </p>
-            <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>
-              <strong>Your role:</strong> {user.role}<br />
+
+            {/* Role Details */}
+            <p
+              style={{
+                color: "var(--muted)",
+                fontSize: "14px",
+                marginBottom: "24px",
+              }}
+            >
+              <strong>Your role:</strong> {user.role}
+              <br />
               <strong>Required role:</strong> {role}
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button 
-                className="btn secondary" 
+
+            {/* Action Buttons */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Go Back Button */}
+              <button
+                className="btn secondary"
                 onClick={() => window.history.back()}
               >
                 Go Back
               </button>
-              <button 
-                className="btn" 
-                onClick={() => window.location.href = '/'}
+
+              {/* Go Home Button */}
+              <button
+                className="btn"
+                onClick={() => (window.location.href = "/")}
               >
                 Go to Home
               </button>
@@ -86,13 +170,15 @@ const RoleBasedRoute = ({ children, role, showAccessDenied = true }) => {
           </div>
         </div>
       );
-    } else {
-      // Redirect to home page
-      return <Navigate to="/" replace />;
     }
+
+    // Redirect to home if access denied page is disabled
+    return <Navigate to="/" replace />;
   }
 
-  // User has the required role, render the protected content
+  // -----------------------------------
+  // User has required role → render page
+  // -----------------------------------
   return children;
 };
 

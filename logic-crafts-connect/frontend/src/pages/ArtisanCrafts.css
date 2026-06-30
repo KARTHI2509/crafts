@@ -1,21 +1,29 @@
+/* ===================================
+   Artisan Crafts Page
+=================================== */
 .artisan-crafts-page {
   min-height: 100vh;
   background: var(--bg);
-  padding: 24px 0;
+  padding: 30px 0;
 }
 
+/* ===================================
+   Page Header
+=================================== */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 35px;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
 }
 
 .page-header h2 {
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .page-header p {
@@ -23,13 +31,15 @@
   font-size: 14px;
 }
 
-/* Statistics Overview */
+/* ===================================
+   Statistics Overview
+=================================== */
 .stats-overview {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 25px;
   box-shadow: var(--shadow);
-  margin-bottom: 24px;
+  margin-bottom: 25px;
 }
 
 .stats-overview h3 {
@@ -37,33 +47,33 @@
   margin-bottom: 20px;
   font-size: 18px;
   border-bottom: 2px solid var(--secondary);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 18px;
   background: #fafafa;
-  border-radius: 8px;
-  transition: transform 0.2s;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -72,16 +82,10 @@
   flex-shrink: 0;
 }
 
-.stat-info {
-  flex: 1;
-}
-
 .stat-value {
   font-size: 28px;
-  font-weight: bold;
+  font-weight: 700;
   color: var(--primary);
-  line-height: 1;
-  margin-bottom: 4px;
 }
 
 .stat-label {
@@ -91,15 +95,17 @@
   letter-spacing: 0.5px;
 }
 
-/* Filter Tabs */
+/* ===================================
+   Filter Tabs
+=================================== */
 .filter-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 25px;
   flex-wrap: wrap;
   background: white;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow);
 }
 
@@ -107,11 +113,11 @@
   padding: 10px 20px;
   background: #f5f5f5;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   color: #666;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .filter-tabs button:hover {
@@ -124,35 +130,40 @@
   color: white;
 }
 
-/* Crafts List */
+/* ===================================
+   Crafts List
+=================================== */
 .crafts-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .craft-item {
   background: white;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 18px;
   box-shadow: var(--shadow);
   display: grid;
-  grid-template-columns: 200px 1fr auto;
-  gap: 20px;
+  grid-template-columns: 220px 1fr auto;
+  gap: 22px;
   align-items: start;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
 }
 
 .craft-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
 }
 
+/* ===================================
+   Craft Image
+=================================== */
 .craft-image {
   position: relative;
-  width: 200px;
-  height: 200px;
-  border-radius: 8px;
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -164,49 +175,46 @@
 
 .craft-image .badge {
   position: absolute;
-  top: 8px;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
+  top: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
   color: white;
-  backdrop-filter: blur(4px);
 }
 
 .craft-image .badge.featured {
-  left: 8px;
-  background: rgba(255, 193, 7, 0.9);
+  left: 10px;
+  background: rgba(255, 193, 7, 0.95);
 }
 
 .craft-image .badge.new {
-  right: 8px;
-  background: rgba(76, 175, 80, 0.9);
+  right: 10px;
+  background: rgba(76, 175, 80, 0.95);
 }
 
-.craft-details {
-  flex: 1;
-}
-
+/* ===================================
+   Craft Details
+=================================== */
 .craft-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   gap: 12px;
 }
 
 .craft-header h4 {
   color: var(--primary);
-  font-size: 20px;
+  font-size: 22px;
   margin: 0;
-  flex: 1;
 }
 
 .status-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: bold;
+  padding: 5px 14px;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 700;
   color: white;
   text-transform: uppercase;
 }
@@ -214,76 +222,62 @@
 .craft-description {
   color: #666;
   font-size: 14px;
-  margin-bottom: 12px;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-bottom: 14px;
+  line-height: 1.6;
 }
 
-.craft-meta {
+.craft-meta,
+.craft-stats,
+.craft-tags {
   display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.meta-item {
-  font-size: 14px;
-  color: #333;
-  font-weight: 500;
-  white-space: nowrap;
+.craft-meta {
+  margin-bottom: 14px;
 }
 
 .craft-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding: 8px 0;
+  margin-bottom: 14px;
+  padding: 10px 0;
   border-top: 1px solid #f0f0f0;
   border-bottom: 1px solid #f0f0f0;
 }
 
+.meta-item,
 .stat-item {
   font-size: 13px;
-  color: #666;
   font-weight: 500;
-}
-
-.craft-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  color: #444;
 }
 
 .tag {
-  padding: 4px 12px;
+  padding: 5px 12px;
   background: #e3f2fd;
   color: #1976d2;
-  border-radius: 16px;
+  border-radius: 18px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Actions */
+/* ===================================
+   Action Buttons
+=================================== */
 .craft-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .btn-icon {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .btn-icon.edit {
@@ -292,7 +286,7 @@
 
 .btn-icon.edit:hover {
   background: #2196f3;
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .btn-icon.delete {
@@ -301,14 +295,16 @@
 
 .btn-icon.delete:hover {
   background: #f44336;
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
-/* No Crafts */
+/* ===================================
+   Empty State
+=================================== */
 .no-crafts {
   background: white;
-  border-radius: 12px;
-  padding: 60px 24px;
+  border-radius: 16px;
+  padding: 70px 24px;
   text-align: center;
   box-shadow: var(--shadow);
 }
@@ -316,37 +312,35 @@
 .no-crafts p {
   color: #999;
   font-size: 16px;
-  margin: 0;
 }
 
-/* Loading */
+/* ===================================
+   Loading
+=================================== */
 .loading {
   text-align: center;
-  padding: 60px;
+  padding: 70px;
   color: #999;
   font-size: 18px;
 }
 
-/* Responsive Design */
+/* ===================================
+   Responsive Design
+=================================== */
 @media (max-width: 992px) {
   .craft-item {
-    grid-template-columns: 150px 1fr auto;
+    grid-template-columns: 160px 1fr auto;
   }
 
   .craft-image {
-    width: 150px;
-    height: 150px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    width: 160px;
+    height: 160px;
   }
 }
 
 @media (max-width: 768px) {
   .craft-item {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
 
   .craft-image {
@@ -357,11 +351,6 @@
   .craft-actions {
     flex-direction: row;
     justify-content: flex-end;
-  }
-
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .stats-grid {
@@ -379,11 +368,7 @@
     grid-template-columns: 1fr;
   }
 
-  .craft-meta {
-    flex-direction: column;
-    gap: 8px;
-  }
-
+  .craft-meta,
   .craft-stats {
     flex-direction: column;
     gap: 8px;

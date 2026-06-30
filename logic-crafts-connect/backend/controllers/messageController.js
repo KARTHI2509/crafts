@@ -1,267 +1,219 @@
-import {
-  sendMessage,
-  getConversation,
-  getUserConversations,
-  markMessagesAsRead,
-  getUnreadCount,
-  deleteMessage,
-  searchMessages,
-  getMessageStats
-} from '../models/messageModel.js';
+import Message from '../models/Message.js';
 
 /**
- * Send a message
- * POST /api/messages
- * Authenticated users
+ * Send Message
  */
 export const sendNewMessage = async (req, res) => {
   try {
     const { receiver_id, craft_id, message_text, message_type, attachment_url } = req.body;
-    const sender_id = req.user.id;
-    
-    // Validation
+
     if (!receiver_id || !message_text) {
       return res.status(400).json({
         success: false,
         message: 'Receiver ID and message text are required'
       });
     }
-    
-    if (sender_id === receiver_id) {
+
+    if (req.user.id === receiver_id) {
       return res.status(400).json({
         success: false,
         message: 'Cannot send message to yourself'
       });
     }
-    
-    const message = await sendMessage({
-      sender_id,
+
+    const message = await Message.create({
+      sender_id: req.user.id,
       receiver_id,
       craft_id,
       message_text,
       message_type,
       attachment_url
     });
-    
+
+    // Emit real-time event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(receiver_id.toString()).emit('newMessage', message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Message sent successfully',
       data: { message }
     });
+
   } catch (error) {
-    console.error('Send message error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send message',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Get conversation with another user
- * GET /api/messages/conversation/:userId
- * Authenticated users
+ * Get Conversation
  */
 export const getConversationWithUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUserId = req.user.id;
-    const { limit, offset, craft_id } = req.query;
-    
-    const messages = await getConversation(currentUserId, userId, {
-      limit: parseInt(limit) || 50,
-      offset: parseInt(offset) || 0,
-      craft_id: craft_id ? parseInt(craft_id) : null
-    });
-    
+    const messages = await Message.find({
+      $or: [
+        { sender_id: req.user.id, receiver_id: req.params.userId },
+        { sender_id: req.params.userId, receiver_id: req.user.id }
+      ]
+    }).sort({ createdAt: 1 });
+
     res.json({
       success: true,
       data: { messages }
     });
+
   } catch (error) {
-    console.error('Get conversation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch conversation',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Get all conversations (inbox)
- * GET /api/messages/inbox
- * Authenticated users
+ * Inbox
  */
 export const getInbox = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const conversations = await getUserConversations(userId);
-    
+    const messages = await Message.find({
+      $or: [
+        { sender_id: req.user.id },
+        { receiver_id: req.user.id }
+      ]
+    }).sort({ createdAt: -1 });
+
     res.json({
       success: true,
-      data: { conversations }
+      data: { messages }
     });
+
   } catch (error) {
-    console.error('Get inbox error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch inbox',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Mark messages as read
- * PUT /api/messages/mark-read/:senderId
- * Authenticated users
+ * Mark Read
  */
 export const markAsRead = async (req, res) => {
   try {
-    const { senderId } = req.params;
-    const receiverId = req.user.id;
-    
-    const count = await markMessagesAsRead(receiverId, senderId);
-    
+    const result = await Message.updateMany(
+      {
+        sender_id: req.params.senderId,
+        receiver_id: req.user.id,
+        is_read: false
+      },
+      {
+        $set: { is_read: true }
+      }
+    );
+
     res.json({
       success: true,
-      message: `${count} message(s) marked as read`,
-      data: { marked_count: count }
+      message: `${result.modifiedCount} message(s) marked as read`
     });
+
   } catch (error) {
-    console.error('Mark as read error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to mark messages as read',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Get unread message count
- * GET /api/messages/unread-count
- * Authenticated users
+ * Unread Count
  */
 export const getUnreadMessageCount = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const count = await getUnreadCount(userId);
-    
+    const count = await Message.countDocuments({
+      receiver_id: req.user.id,
+      is_read: false
+    });
+
     res.json({
       success: true,
       data: { unread_count: count }
     });
+
   } catch (error) {
-    console.error('Get unread count error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch unread count',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Delete a message
- * DELETE /api/messages/:id
- * Authenticated users (sender only)
+ * Delete Message
  */
 export const deleteMessageById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    
-    await deleteMessage(id, userId);
-    
+    const message = await Message.findOneAndDelete({
+      _id: req.params.id,
+      sender_id: req.user.id
+    });
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found or unauthorized'
+      });
+    }
+
     res.json({
       success: true,
       message: 'Message deleted successfully'
     });
+
   } catch (error) {
-    console.error('Delete message error:', error);
-    
-    if (error.message.includes('not found or unauthorized')) {
-      return res.status(404).json({
-        success: false,
-        message: error.message
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete message',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Search messages
- * GET /api/messages/search
- * Authenticated users
+ * Search Messages
  */
 export const searchUserMessages = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { q } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required'
-      });
-    }
-    
-    const messages = await searchMessages(userId, q);
-    
+    const messages = await Message.find({
+      $or: [
+        { sender_id: req.user.id },
+        { receiver_id: req.user.id }
+      ],
+      message_text: {
+        $regex: req.query.q,
+        $options: 'i'
+      }
+    });
+
     res.json({
       success: true,
       data: { messages }
     });
+
   } catch (error) {
-    console.error('Search messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to search messages',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Get message statistics
- * GET /api/messages/stats
- * Authenticated users
+ * Message Stats
  */
 export const getUserMessageStats = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const stats = await getMessageStats(userId);
-    
+    const sent = await Message.countDocuments({ sender_id: req.user.id });
+    const received = await Message.countDocuments({ receiver_id: req.user.id });
+    const unread = await Message.countDocuments({
+      receiver_id: req.user.id,
+      is_read: false
+    });
+
     res.json({
       success: true,
-      data: { stats }
+      data: {
+        stats: {
+          sent,
+          received,
+          unread
+        }
+      }
     });
-  } catch (error) {
-    console.error('Get message stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch message statistics',
-      error: error.message
-    });
-  }
-};
 
-export default {
-  sendNewMessage,
-  getConversationWithUser,
-  getInbox,
-  markAsRead,
-  getUnreadMessageCount,
-  deleteMessageById,
-  searchUserMessages,
-  getUserMessageStats
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };

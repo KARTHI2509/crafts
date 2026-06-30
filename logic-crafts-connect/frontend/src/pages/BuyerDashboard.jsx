@@ -1,170 +1,287 @@
-import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { LanguageContext } from '../context/LanguageContext';
-import ProductCard from '../components/ProductCard';
-import axios from 'axios';
-import './BuyerDashboard.css';
+import { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+import { AuthContext } from "../context/AuthContext";
+import { LanguageContext } from "../context/LanguageContext";
+import ProductCard from "../components/ProductCard";
+import "./BuyerDashboard.css";
+
+function AnimatedNumber({ value }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = parseInt(value, 10) || 0;
+    if (end === 0) {
+      setDisplayValue(0);
+      return;
+    }
+    const duration = 1.2;
+    const incrementTime = 25;
+    const totalSteps = (duration * 1000) / incrementTime;
+    const step = end / totalSteps;
+
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplayValue(end);
+      } else {
+        setDisplayValue(Math.floor(start));
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return <span>{displayValue}</span>;
+}
 
 const BuyerDashboard = () => {
   const { user } = useContext(AuthContext);
   const { language } = useContext(LanguageContext);
   const navigate = useNavigate();
 
+  // --------------------------------
+  // State Management
+  // --------------------------------
   const [stats, setStats] = useState({
     orders: { total: 0, pending: 0, completed: 0 },
     wishlist: 0,
     cart: 0,
-    unreadMessages: 0
+    unreadMessages: 0,
   });
+
   const [recentOrders, setRecentOrders] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [availableCrafts, setAvailableCrafts] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [filters, setFilters] = useState({
-    category: '',
-    artisan: '',
-    minPrice: '',
-    maxPrice: '',
-    sortBy: 'newest' // newest, price_low, price_high, popularity
+    category: "",
+    artisan: "",
+    sortBy: "newest",
   });
 
-  const text = {
-    en: {
-      welcome: 'Welcome back',
-      myOrders: 'My Orders',
-      wishlist: 'Wishlist',
-      cart: 'Shopping Cart',
-      messages: 'Messages',
-      totalOrders: 'Total Orders',
-      pendingOrders: 'Pending',
-      completedOrders: 'Completed',
-      items: 'items',
-      unread: 'unread',
-      recentOrders: 'Recent Orders',
-      recommendedForYou: 'Recommended for You',
-      browseCrafts: 'Browse Available Crafts',
-      newArrivals: 'New Arrivals',
-      viewAll: 'View All',
-      viewOrder: 'View',
-      addToCart: 'Add to Cart',
-      noOrders: 'No orders yet',
-      startShopping: 'Start Shopping',
-      orderNumber: 'Order #',
-      status: 'Status',
-      total: 'Total',
-      loading: 'Loading your dashboard...'
-    },
-    te: {
-      welcome: 'తిరిగి స్వాగతం',
-      myOrders: 'నా ఆర్డర్లు',
-      wishlist: 'విష్‌లిస్ట్',
-      cart: 'షాపింగ్ కార్ట్',
-      messages: 'సందేశాలు',
-      totalOrders: 'మొత్తం ఆర్డర్లు',
-      pendingOrders: 'పెండింగ్',
-      completedOrders: 'పూర్తయింది',
-      items: 'వస్తువులు',
-      unread: 'చదవలేదు',
-      recentOrders: 'ఇటీవలి ఆర్డర్లు',
-      recommendedForYou: 'మీ కోసం సిఫార్సు చేయబడింది',
-      browseCrafts: 'అందుబాటులో ఉన్న హస్తకళలను బ్రౌజ్ చేయండి',
-      newArrivals: 'కొత్త రాకలు',
-      viewAll: 'అన్నీ చూడండి',
-      viewOrder: 'చూడండి',
-      addToCart: 'కార్ట్‌కు జోడించండి',
-      noOrders: 'ఇంకా ఆర్డర్లు లేవు',
-      startShopping: 'షాపింగ్ ప్రారంభించండి',
-      orderNumber: 'ఆర్డర్ #',
-      status: 'స్థితి',
-      total: 'మొత్తం',
-      loading: 'మీ డాష్‌బోర్డ్ లోడ్ చేస్తోంది...'
-    }
+  // Auth Config
+  const token = localStorage.getItem("token");
+  const config = {
+    headers: { Authorization: `Bearer ${token}` },
   };
 
-  const t = text[language];
+  // --------------------------------
+  // Language Content
+  // --------------------------------
+  const text = {
+    en: {
+      welcome: "Welcome back",
+      myOrders: "My Orders",
+      wishlist: "Wishlist",
+      cart: "Shopping Cart",
+      messages: "Messages",
+      pendingOrders: "Pending",
+      completedOrders: "Completed",
+      items: "items",
+      unread: "unread",
+      recentOrders: "Recent Orders",
+      recommendedForYou: "Recommended For You",
+      browseCrafts: "Browse Available Crafts",
+      viewAll: "View All",
+      viewOrder: "View",
+      addToCart: "Add to Cart",
+      noOrders: "No orders yet",
+      startShopping: "Start Shopping",
+      orderNumber: "Order #",
+      total: "Total",
+      loading: "Loading your dashboard...",
+    },
+  };
 
+  const t = text[language] || text.en;
+
+  // --------------------------------
+  // Initial Load
+  // --------------------------------
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
+  // --------------------------------
+  // Fetch Dashboard Data
+  // --------------------------------
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      setLoading(true);
 
-      // Fetch stats and crafts data (don't fail if recommendations fail)
-      const [ordersRes, wishlistRes, cartRes, messagesRes, craftsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/orders/stats', config).catch(() => ({ data: { data: { stats: { total: 0, pending: 0, completed: 0 } } } })),
-        axios.get('http://localhost:5000/api/wishlist/count', config).catch(() => ({ data: { data: { count: 0 } } })),
-        axios.get('http://localhost:5000/api/cart', config).catch(() => ({ data: { data: { total_items: 0 } } })),
-        axios.get('http://localhost:5000/api/messages/unread-count', config).catch(() => ({ data: { data: { unread_count: 0 } } })),
-        axios.get('http://localhost:5000/api/crafts?page=1&limit=8') // Fetch all available crafts
+      const [
+        ordersRes,
+        wishlistRes,
+        cartRes,
+        messagesRes,
+        craftsRes,
+      ] = await Promise.all([
+        axios
+          .get("http://localhost:5000/api/orders/stats", config)
+          .catch(() => ({
+            data: {
+              data: {
+                stats: {
+                  total: 0,
+                  pending: 0,
+                  completed: 0,
+                },
+              },
+            },
+          })),
+
+        axios
+          .get("http://localhost:5000/api/wishlist/count", config)
+          .catch(() => ({
+            data: { data: { count: 0 } },
+          })),
+
+        axios
+          .get("http://localhost:5000/api/cart", config)
+          .catch(() => ({
+            data: { data: { total_items: 0 } },
+          })),
+
+        axios
+          .get(
+            "http://localhost:5000/api/messages/unread-count",
+            config
+          )
+          .catch(() => ({
+            data: { data: { unread_count: 0 } },
+          })),
+
+        axios.get(
+          "http://localhost:5000/api/crafts?page=1&limit=8"
+        ),
       ]);
 
+      // Update Stats
       setStats({
         orders: ordersRes.data.data.stats,
         wishlist: wishlistRes.data.data.count,
         cart: cartRes.data.data.total_items || 0,
-        unreadMessages: messagesRes.data.data.unread_count
+        unreadMessages:
+          messagesRes.data.data.unread_count,
       });
 
-      // Try to fetch recommendations, but don't fail if it errors
-      try {
-        const recommendationsRes = await axios.get('http://localhost:5000/api/recommendations/personalized?limit=4', config);
-        setRecommendations(recommendationsRes.data.data.recommendations || []);
-      } catch (recError) {
-        console.log('Recommendations not available, using crafts instead');
-        setRecommendations([]);
-      }
+      // Fetch Recommendations
+      await fetchRecommendations();
 
-      // Transform available crafts
-      const craftsData = craftsRes.data.data.crafts || [];
-      const transformedCrafts = craftsData.map(craft => ({
-        id: craft.id,
-        name: craft.name,
-        craftType: craft.craft_type || craft.category || 'Handmade',
-        price: `₹${craft.price || 0}`,
-        location: craft.location || craft.artisan_location || 'India',
-        imageUrl: craft.image_url || (craft.images && craft.images.length > 0 ? craft.images[0] : 'https://via.placeholder.com/400x300?text=No+Image'),
-        contact: craft.contact || craft.artisan_phone || '919876543210',
-        artisan: craft.artisan_name || 'Unknown Artisan',
-        verified: craft.status === 'approved',
-      }));
-      setAvailableCrafts(transformedCrafts);
+      // Transform Crafts
+      const crafts =
+        craftsRes.data.data.crafts?.map((craft) => ({
+          id: craft.id,
+          name: craft.name,
+          craftType:
+            craft.craft_type ||
+            craft.category ||
+            "Handmade",
+          price: `₹${craft.price || 0}`,
+          location:
+            craft.location ||
+            craft.artisan_location ||
+            "India",
+          imageUrl:
+            craft.image_url ||
+            craft.images?.[0] ||
+            "https://via.placeholder.com/400x300?text=No+Image",
+          contact:
+            craft.contact ||
+            craft.artisan_phone ||
+            "919876543210",
+          artisan:
+            craft.artisan_name ||
+            "Unknown Artisan",
+          verified: craft.status === "approved",
+        })) || [];
 
-      // Fetch recent orders
-      try {
-        const recentOrdersRes = await axios.get('http://localhost:5000/api/orders?limit=5', config);
-        setRecentOrders(recentOrdersRes.data.data.orders || []);
-      } catch (orderError) {
-        console.log('No orders found');
-        setRecentOrders([]);
-      }
+      setAvailableCrafts(crafts);
 
-      setLoading(false);
+      // Fetch Recent Orders
+      await fetchRecentOrders();
+
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error(
+        "Error fetching dashboard data:",
+        error
+      );
+    } finally {
       setLoading(false);
     }
   };
 
+  // --------------------------------
+  // Fetch Recommendations
+  // --------------------------------
+  const fetchRecommendations = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/recommendations/personalized?limit=4",
+        config
+      );
+
+      setRecommendations(
+        response.data.data.recommendations || []
+      );
+    } catch {
+      console.log(
+        "Recommendations unavailable"
+      );
+      setRecommendations([]);
+    }
+  };
+
+  // --------------------------------
+  // Fetch Recent Orders
+  // --------------------------------
+  const fetchRecentOrders = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/orders?limit=5",
+        config
+      );
+
+      setRecentOrders(
+        response.data.data.orders || []
+      );
+    } catch {
+      setRecentOrders([]);
+    }
+  };
+
+  // --------------------------------
+  // Add To Cart
+  // --------------------------------
   const handleAddToCart = async (craftId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(
-        'http://localhost:5000/api/cart',
-        { craft_id: craftId, quantity: 1 },
-        { headers: { Authorization: `Bearer ${token}` } }
+        "http://localhost:5000/api/cart",
+        {
+          craft_id: craftId,
+          quantity: 1,
+        },
+        config
       );
-      fetchDashboardData(); // Refresh cart count
-      alert('Added to cart!');
+
+      fetchDashboardData();
+      alert("Added to cart!");
     } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
+      console.error(
+        "Add to cart error:",
+        error
+      );
+      alert("Failed to add to cart");
     }
   };
 
+  // --------------------------------
+  // Loading State
+  // --------------------------------
   if (loading) {
     return (
       <div className="buyer-dashboard">
@@ -175,88 +292,102 @@ const BuyerDashboard = () => {
 
   return (
     <div className="buyer-dashboard">
+
+      {/* Header */}
       <div className="dashboard-header">
-        <h1>{t.welcome}, {user?.name}!</h1>
+        <h1>
+          {t.welcome}, {user?.name}!
+        </h1>
       </div>
 
       {/* Quick Stats */}
       <div className="stats-grid">
-        <div className="stat-card" onClick={() => navigate('/buyer/orders')}>
-          <div className="stat-icon">📦</div>
-          <div className="stat-content">
-            <h3>{t.myOrders}</h3>
-            <div className="stat-number">{stats.orders.total}</div>
-            <div className="stat-details">
-              <span>{stats.orders.pending} {t.pendingOrders}</span>
-              <span>{stats.orders.completed} {t.completedOrders}</span>
+        {[
+          ["📦", t.myOrders, stats.orders.total],
+          ["❤️", t.wishlist, stats.wishlist],
+          ["🛒", t.cart, stats.cart],
+          ["💬", t.messages, stats.unreadMessages],
+        ].map(([icon, label, value], index) => (
+          <div key={index} className="stat-card">
+            <div className="stat-icon">{icon}</div>
+
+            <div className="stat-content">
+              <h3>{label}</h3>
+              <div className="stat-number">
+                <AnimatedNumber value={value} />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="stat-card" onClick={() => navigate('/buyer/wishlist')}>
-          <div className="stat-icon">❤️</div>
-          <div className="stat-content">
-            <h3>{t.wishlist}</h3>
-            <div className="stat-number">{stats.wishlist}</div>
-            <div className="stat-details">{stats.wishlist} {t.items}</div>
-          </div>
-        </div>
-
-        <div className="stat-card" onClick={() => navigate('/cart')}>
-          <div className="stat-icon">🛒</div>
-          <div className="stat-content">
-            <h3>{t.cart}</h3>
-            <div className="stat-number">{stats.cart}</div>
-            <div className="stat-details">{stats.cart} {t.items}</div>
-          </div>
-        </div>
-
-        <div className="stat-card" onClick={() => navigate('/buyer/messages')}>
-          <div className="stat-icon">💬</div>
-          <div className="stat-content">
-            <h3>{t.messages}</h3>
-            <div className="stat-number">{stats.unreadMessages}</div>
-            <div className="stat-details">{stats.unreadMessages} {t.unread}</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Recent Orders */}
       <section className="dashboard-section">
         <div className="section-header">
           <h2>{t.recentOrders}</h2>
-          <button onClick={() => navigate('/buyer/orders')} className="view-all-btn">
+
+          <button
+            onClick={() =>
+              navigate("/buyer/orders")
+            }
+            className="view-all-btn"
+          >
             {t.viewAll} →
           </button>
         </div>
-        
+
         {recentOrders.length === 0 ? (
           <div className="empty-state">
             <p>{t.noOrders}</p>
-            <button onClick={() => navigate('/explore')} className="primary-btn">
+
+            <button
+              onClick={() =>
+                navigate("/explore")
+              }
+              className="primary-btn"
+            >
               {t.startShopping}
             </button>
           </div>
         ) : (
           <div className="orders-list">
-            {recentOrders.map(order => (
-              <div key={order.id} className="order-item">
+            {recentOrders.map((order) => (
+              <div
+                key={order.id}
+                className="order-item"
+              >
                 <div className="order-info">
-                  <span className="order-number">{t.orderNumber}{order.order_number}</span>
-                  <span className={`order-status status-${order.status}`}>
+                  <span className="order-number">
+                    {t.orderNumber}
+                    {order.order_number}
+                  </span>
+
+                  <span
+                    className={`order-status status-${order.status}`}
+                  >
                     {order.status}
                   </span>
                 </div>
+
                 <div className="order-details">
-                  <span className="order-date">
-                    {new Date(order.created_at).toLocaleDateString()}
+                  <span>
+                    {new Date(
+                      order.created_at
+                    ).toLocaleDateString()}
                   </span>
+
                   <span className="order-total">
-                    {t.total}: ₹{order.total_amount}
+                    {t.total}: ₹
+                    {order.total_amount}
                   </span>
                 </div>
-                <button 
-                  onClick={() => navigate(`/buyer/orders/${order.id}`)}
+
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/buyer/orders/${order.id}`
+                    )
+                  }
                   className="view-order-btn"
                 >
                   {t.viewOrder}
@@ -272,28 +403,35 @@ const BuyerDashboard = () => {
         <section className="dashboard-section">
           <div className="section-header">
             <h2>{t.recommendedForYou}</h2>
-            <button onClick={() => navigate('/explore')} className="view-all-btn">
-              {t.viewAll} →
-            </button>
           </div>
-          
+
           <div className="recommendations-grid">
-            {recommendations.map(item => (
-              <div key={item.id} className="recommendation-card">
+            {recommendations.map((item) => (
+              <div
+                key={item.id}
+                className="recommendation-card"
+              >
                 <div className="recommendation-image">
-                  <img 
-                    src={item.images?.[0] || '/placeholder.jpg'} 
+                  <img
+                    src={
+                      item.images?.[0] ||
+                      "/placeholder.jpg"
+                    }
                     alt={item.title}
                   />
                 </div>
+
                 <div className="recommendation-content">
                   <h3>{item.title}</h3>
-                  <p className="price">₹{item.price}</p>
-                  <div className="rating">
-                    ⭐ {item.rating || 'New'}
-                  </div>
-                  <button 
-                    onClick={() => handleAddToCart(item.id)}
+
+                  <p className="price">
+                    ₹{item.price}
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      handleAddToCart(item.id)
+                    }
                     className="add-to-cart-btn"
                   >
                     {t.addToCart}
@@ -305,67 +443,19 @@ const BuyerDashboard = () => {
         </section>
       )}
 
-      {/* Available Crafts - New Arrivals from Artisans */}
+      {/* Available Crafts */}
       {availableCrafts.length > 0 && (
         <section className="dashboard-section">
           <div className="section-header">
             <h2>{t.browseCrafts}</h2>
-            <button onClick={() => navigate('/explore')} className="view-all-btn">
-              {t.viewAll} →
-            </button>
           </div>
-          
-          {/* Filters */}
-          <div className="filters-panel" style={{marginBottom: '20px'}}>
-            <div className="filters-grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}>
-              <div className="field">
-                <label>Category</label>
-                <select 
-                  className="input"
-                  value={filters.category}
-                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                >
-                  <option value="">All Categories</option>
-                  <option value="Pottery">Pottery</option>
-                  <option value="Woodwork">Woodwork</option>
-                  <option value="Textiles">Textiles</option>
-                  <option value="Jewelry">Jewelry</option>
-                  <option value="Metalwork">Metalwork</option>
-                  <option value="Basketry">Basketry</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              
-              <div className="field">
-                <label>Artisan</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Search artisan..."
-                  value={filters.artisan}
-                  onChange={(e) => setFilters({ ...filters, artisan: e.target.value })}
-                />
-              </div>
-              
-              <div className="field">
-                <label>Sort By</label>
-                <select 
-                  className="input"
-                  value={filters.sortBy}
-                  onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="price_low">Price: Low to High</option>
-                  <option value="price_high">Price: High to Low</option>
-                  <option value="popularity">Popularity</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', marginTop: '20px'}}>
-            {availableCrafts.map(craft => (
-              <ProductCard key={craft.id} craft={craft} />
+
+          <div className="grid">
+            {availableCrafts.map((craft) => (
+              <ProductCard
+                key={craft.id}
+                craft={craft}
+              />
             ))}
           </div>
         </section>

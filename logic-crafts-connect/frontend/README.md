@@ -1,254 +1,341 @@
 # Logic Crafts Connect - Frontend
 
-**A Beautiful Platform Connecting Local Artisans with Global Customers**
+**A Complete Marketplace Connecting Local Artisans with Global Buyers**
 
-![React](https://img.shields.io/badge/React-19.1.1-61dafb) ![Vite](https://img.shields.io/badge/Vite-7.1.7-646cff) ![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![React](https://img.shields.io/badge/React-19.1.1-61dafb)
+![Vite](https://img.shields.io/badge/Vite-7.1.7-646cff)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+
+---
 
 ## 🎨 Overview
 
-Logic Crafts Connect is a complete, visually appealing frontend application designed to empower local artisans by connecting them directly with global customers. Built with React and Vite, it features a warm earthy color palette, bilingual support (English/Telugu), and comprehensive functionality for both artisans and buyers.
+Logic Crafts Connect is a full-stack frontend marketplace platform where artisans can upload and sell handmade crafts directly to buyers without middlemen.
 
-## ✨ Key Features
+Built with:
 
-### 🎯 Core Functionality
+* React 19
+* Vite
+* React Router
+* Axios
+* Context API
 
-- ✅ **JWT-Based Authentication**: Secure login and registration flow
-- ✅ **Bilingual Support**: Toggle between English and Telugu (తెలుగు)
-- ✅ **User Roles**: Separate experiences for Artisans, Buyers, and Admins
-- ✅ **Local Image Upload**: Support for craft image uploads with preview
-- ✅ **Real-time Filtering**: Search by category, location, artisan name
-- ✅ **Verified Badges**: Admin-approved crafts display ✓ verification badges
-- ✅ **Responsive Design**: Mobile-first, elegant design with warm earthy tones
+Supports:
 
-### 🌟 Unique Features
+* Multi-role authentication
+* Buyer cart & wishlist
+* Order tracking
+* Artisan analytics
+* Admin approval system
+* Bilingual support (English/Telugu)
 
-1. **Storytelling Platform**: Each artisan can share their craft heritage
-2. **Admin Verification System**: Quality control through approval workflow
-3. **Dashboard Analytics**: Views, likes, and engagement metrics
-4. **Events & Exhibitions**: Dedicated section for handicraft events
-5. **Community Reviews**: Appreciation messages and feedback system (API-ready)
-6. **Multi-step Registration**: Role-based signup with artisan story collection
+---
+
+## ✨ Features
+
+### 🔐 Authentication
+
+* JWT Login/Register
+* Session persistence
+* Role-based redirects
+* Protected routes
+
+### 👨‍🎨 Artisan Features
+
+* Upload crafts
+* Manage crafts
+* View orders
+* Order details
+* Analytics dashboard
+* Buyer messaging
+
+### 🛍 Buyer Features
+
+* Explore crafts
+* Add to cart
+* Wishlist management
+* Place orders
+* Order tracking
+* View order details
+
+### 🛠 Admin Features
+
+* Approve/reject crafts
+* Create events
+* Manage users
+* View reports
+* Dashboard statistics
+
+### 🌍 Additional Features
+
+* English/Telugu language support
+* Responsive UI
+* Search & filters
+* Image upload preview
+* Local storage utils
+* API service abstraction
+
+---
 
 ## 📂 Project Structure
 
-```
+```bash
 frontend/
 ├── src/
-│   ├── pages/                    # All main pages
-│   │   ├── Home.jsx             # Landing page with features & testimonials
-│   │   ├── Explore.jsx          # Browse crafts with filters
-│   │   ├── Login.jsx            # User authentication
-│   │   ├── Register.jsx         # User registration with role selection
-│   │   ├── DashboardUser.jsx    # Artisan dashboard with analytics
-│   │   ├── DashboardAdmin.jsx   # Admin panel for approvals & events
-│   │   ├── UploadCraft.jsx      # Craft upload with story
-│   │   ├── ArtisanProfile.jsx   # Artisan profile page
-│   │   └── Events.jsx           # Events & exhibitions listing
-│   ├── components/               # Reusable components
-│   │   ├── Navbar.jsx           # Navigation with language toggle
-│   │   ├── Footer.jsx           # Footer with social links
-│   │   └── ProductCard.jsx      # Craft display card
-│   ├── context/                  # React Context
-│   │   └── LanguageContext.jsx  # Language state management
-│   ├── utils/                    # Utility functions
-│   │   └── api.js               # API integration utilities
-│   ├── App.jsx                   # Main app component with routing
-│   ├── App.css                   # Complete styling (1000+ lines)
-│   ├── index.css                 # Base CSS reset
-│   └── main.jsx                  # App entry point
+│   ├── components/
+│   │   ├── Navbar.jsx
+│   │   ├── Footer.jsx
+│   │   ├── ProductCard.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── RoleBasedRoute.jsx
+│   │
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── LanguageContext.jsx
+│   │
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── Explore.jsx
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── UploadCraft.jsx
+│   │   ├── UploadCraftEnhanced.jsx
+│   │   ├── ArtisanDashboard.jsx
+│   │   ├── ArtisanCrafts.jsx
+│   │   ├── ArtisanOrders.jsx
+│   │   ├── ArtisanOrderDetails.jsx
+│   │   ├── ArtisanMessages.jsx
+│   │   ├── ArtisanAnalytics.jsx
+│   │   ├── ArtisanProfile.jsx
+│   │   ├── BuyerDashboard.jsx
+│   │   ├── Wishlist.jsx
+│   │   ├── Cart.jsx
+│   │   ├── BuyerOrders.jsx
+│   │   ├── OrderDetails.jsx
+│   │   ├── Events.jsx
+│   │   └── AdminDashboard_Role.jsx
+│   │
+│   ├── services/
+│   │   └── api.js
+│   │
+│   ├── utils/
+│   │   ├── storage.js
+│   │   ├── formatters.js
+│   │   └── validators.js
+│   │
+│   ├── App.jsx
+│   ├── App.css
+│   ├── index.css
+│   └── main.jsx
+│
 ├── package.json
 ├── vite.config.js
 └── README.md
 ```
 
-## 🎨 Design Philosophy
+---
 
-### Color Palette (Warm Earthy Tones)
-
-```css
---primary: #8b5a2b         /* Warm Brown */
---primary-light: #a67c52   /* Light Brown */
---accent: #d4a574          /* Beige Gold */
---bg-cream: #faf8f4        /* Cream Background */
---success: #6b8e23         /* Olive Green */
---danger: #c44536          /* Terracotta Red */
-```
-
-## 🚀 Quick Start
-
-### Installation
+## 🚀 Installation
 
 ```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linter
-npm run lint
 ```
 
-### Development Server
-
-After running `npm run dev`, open [http://localhost:5173](http://localhost:5173) (or the port shown in terminal)
-
-## 📄 Pages Overview
-
-| Page | Route | Features |
-|------|-------|----------|
-| **Home** | `/` | Hero, Features, Testimonials, Events teaser |
-| **Explore** | `/explore` | Craft grid with filters, verified badges |
-| **Login** | `/login` | Authentication with error handling |
-| **Register** | `/register` | Role selection, "My Story" for artisans |
-| **User Dashboard** | `/dashboard` | Analytics, craft management |
-| **Admin Dashboard** | `/admin` | Approvals queue, events management |
-| **Upload Craft** | `/upload` | Multi-field form with image preview |
-| **Events** | `/events` | Exhibitions and workshops listing |
-| **Artisan Profile** | `/artisan/:id` | Individual artisan showcase |
-
-## 🌐 API Integration
-
-All API endpoints are pre-defined in `src/utils/api.js`:
-
-### To Connect Backend:
-
-1. Update `BASE_URL` in `src/utils/api.js`:
-   ```javascript
-   const BASE_URL = 'http://localhost:5000/api'; // Your backend URL
-   ```
-
-2. Uncomment API calls in components (marked with `// TODO`)
-
-3. Remove mock data implementations
-
-### Available API Methods:
-
-```javascript
-// Authentication
-authAPI.login(email, password)
-authAPI.register(userData)
-authAPI.logout()
-
-// Crafts
-craftAPI.getAll(filters)
-craftAPI.create(formData)
-craftAPI.getMyCrafts()
-craftAPI.delete(id)
-
-// Admin
-adminAPI.getPendingCrafts()
-adminAPI.approveCraft(id)
-adminAPI.rejectCraft(id)
-adminAPI.createEvent(data)
-
-// Reviews
-reviewAPI.getForCraft(craftId)
-reviewAPI.create(data)
-```
-
-## 🔐 Mock Login Credentials
-
-For testing the application:
-
-```
-Artisan:  artisan@example.com / password
-Admin:    admin@example.com / password
-Buyer:    buyer@example.com / password
-```
-
-## 🌍 Bilingual Support
-
-Toggle between English and Telugu (తెలుగు) using the navbar button.
-
-**All pages support both languages:**
-- Home page content
-- Form labels and buttons
-- Dashboard stats
-- Event descriptions
-- Footer links
-
-## 📱 Responsive Breakpoints
-
-- **Mobile**: < 480px
-- **Tablet**: 480px - 800px
-- **Desktop**: > 800px
-
-## ✅ Quality Assurance
+Production build:
 
 ```bash
-# Run linter (0 errors)
-npm run lint
-
-# Build for production (successful)
 npm run build
-
-# Check for vulnerabilities (0 found)
-npm audit --production
+npm run preview
 ```
 
-## 🛠️ Technologies
+Lint:
 
-- **React 19.1.1** - UI library
-- **Vite 7.1.7** - Build tool & dev server
-- **React Router DOM 7.9.4** - Client-side routing
-- **Axios 1.12.2** - HTTP client
-- **Context API** - State management
-- **ESLint** - Code quality
-
-## 🎯 Feature Checklist
-
-- ✅ JWT Authentication Flow
-- ✅ Bilingual Support (EN/TE)
-- ✅ Role-based Dashboards
-- ✅ Craft Upload with Story
-- ✅ Admin Approval Workflow
-- ✅ Events Management
-- ✅ Verified Badges
-- ✅ Analytics Dashboard
-- ✅ Advanced Filtering
-- ✅ Mobile Responsive
-- ✅ Warm Earthy Design
-- ✅ Social Media Links
-- ✅ Image Preview
-- ✅ Loading States
-- ✅ Error Handling
-
-## 📊 Project Status
-
-**Status**: ✅ Production Ready
-
-- **Lint Check**: ✅ Passing
-- **Build**: ✅ Successful
-- **Security**: ✅ 0 Vulnerabilities
-- **Responsive**: ✅ Mobile/Tablet/Desktop
-- **Accessibility**: ✅ Semantic HTML
-- **Performance**: ✅ Optimized
-
-## 🤝 Contributing
-
-When contributing:
-1. Maintain the earthy color palette
-2. Ensure bilingual support for new features
-3. Follow existing code structure
-4. Add mock data for testing
-5. Run `npm run lint` before committing
-
-## 📄 License
-
-Copyright © 2025 Logic Crafts Connect. All rights reserved.
+```bash
+npm run lint
+```
 
 ---
 
-**Built with ❤️ for local artisans worldwide**
+## 🌐 Routes
 
-**కళాకారుల కోసం, కళాకారులచే** | **For artisans, by artisans**
+### Public Routes
+
+| Route        | Page            |
+| ------------ | --------------- |
+| /            | Home            |
+| /explore     | Explore Crafts  |
+| /events      | Events          |
+| /login       | Login           |
+| /register    | Register        |
+| /artisan/:id | Artisan Profile |
+
+---
+
+### Buyer Routes
+
+| Route                  | Page            |
+| ---------------------- | --------------- |
+| /buyer-dashboard       | Buyer Dashboard |
+| /cart                  | Cart            |
+| /buyer/wishlist        | Wishlist        |
+| /buyer/orders          | Buyer Orders    |
+| /buyer/orders/:orderId | Order Details   |
+
+---
+
+### Artisan Routes
+
+| Route                    | Page                  |
+| ------------------------ | --------------------- |
+| /artisan-dashboard       | Artisan Dashboard     |
+| /artisan/crafts          | Artisan Crafts        |
+| /artisan/orders          | Artisan Orders        |
+| /artisan/orders/:orderId | Artisan Order Details |
+| /artisan/messages        | Messages              |
+| /artisan/analytics       | Analytics             |
+
+---
+
+### Admin Routes
+
+| Route            | Page            |
+| ---------------- | --------------- |
+| /admin-dashboard | Admin Dashboard |
+
+---
+
+## 🔗 API Services
+
+Located in:
+
+```bash
+src/services/api.js
+```
+
+Includes:
+
+### Auth API
+
+```js
+authAPI.login()
+authAPI.register()
+authAPI.logout()
+authAPI.verifyToken()
+```
+
+### Craft API
+
+```js
+craftAPI.getAll()
+craftAPI.getById()
+craftAPI.create()
+craftAPI.update()
+craftAPI.delete()
+craftAPI.getMyCrafts()
+```
+
+### Cart API
+
+```js
+cartAPI.getCart()
+cartAPI.addToCart()
+cartAPI.updateCart()
+cartAPI.removeItem()
+cartAPI.clearCart()
+```
+
+### Wishlist API
+
+```js
+wishlistAPI.getWishlist()
+wishlistAPI.add()
+wishlistAPI.remove()
+wishlistAPI.clear()
+wishlistAPI.moveToCart()
+```
+
+### Orders API
+
+```js
+orderAPI.getOrders()
+orderAPI.getOrderDetails()
+orderAPI.cancelOrder()
+orderAPI.returnOrder()
+```
+
+### Admin API
+
+```js
+adminAPI.getPendingCrafts()
+adminAPI.approveCraft()
+adminAPI.rejectCraft()
+adminAPI.getStats()
+adminAPI.createEvent()
+```
+
+---
+
+## 🎨 UI Design
+
+Warm earthy color palette:
+
+```css
+--primary: #8b5a2b;
+--accent: #d4a574;
+--bg-cream: #faf8f4;
+--success: #6b8e23;
+--danger: #c44536;
+```
+
+---
+
+## 📱 Responsive Design
+
+Supports:
+
+* Mobile
+* Tablet
+* Desktop
+
+---
+
+## 🛠 Technologies
+
+* React 19
+* Vite 7
+* Axios
+* React Router DOM
+* Context API
+* ESLint
+* Tailwind (optional)
+
+---
+
+## ✅ Status
+
+Project Status: **Active Development**
+
+Completed:
+
+* Authentication
+* Buyer flow
+* Artisan flow
+* Admin flow
+* Cart system
+* Wishlist system
+* Orders system
+* Upload system
+* Protected routes
+* Role-based routes
+
+Pending:
+
+* Checkout page
+* Payment integration
+* Live messaging
+* Notification system
+
+---
+
+Built with ❤️ for artisans.

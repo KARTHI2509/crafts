@@ -1,146 +1,200 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../services/api';
 
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { authAPI } from "../services/api";
+import { storage } from "../utils/storage";
+import { ROUTES } from "../utils/routes";
+
+// Create Auth Context
 export const AuthContext = createContext();
 
-// Custom hook for using auth context
+/**
+ * Custom Hook for AuthContext
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
   }
+
   return context;
 };
 
+/**
+ * Auth Provider
+ */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
-  // Restore session from localStorage on mount
+  // Restore session
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const storedToken = storage.getToken();
+    const storedUser = storage.getUser();
 
     if (storedToken && storedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(parsedUser);
+        setUser(storedUser);
       } catch (error) {
-        console.error('Failed to parse stored user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        console.error("Session restore failed:", error);
+        storage.clearAll();
       }
     }
+
     setLoading(false);
   }, []);
 
-  // Login function
+  /**
+   * Login
+   */
   const login = async (email, password) => {
     try {
       setLoading(true);
-      
-      // Call actual API
+
       const response = await authAPI.login(email, password);
-      
-      if (response.success && response.data) {
-        const { user: userData, token: authToken } = response.data;
+      const res = response.data || response;
 
-        // Store in localStorage
-        localStorage.setItem('token', authToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('role', userData.role);
-
-        // Update state
-        setToken(authToken);
-        setUser(userData);
-
-        // Role-based redirect
-        redirectBasedOnRole(userData.role);
-
-        return { success: true, user: userData };
-      } else {
-        return { success: false, message: response.message || 'Login failed' };
+      if (!res.success || !res.data) {
+        return {
+          success: false,
+          message: res.message || "Login failed",
+        };
       }
+
+      const { user: userData, token: authToken } = res.data;
+
+      // Save using storage utils
+      storage.setToken(authToken);
+      storage.setUser(userData);
+      storage.setRole(userData.role);
+
+      setUser(userData);
+      setToken(authToken);
+
+      redirectBasedOnRole(userData.role);
+
+      return {
+        success: true,
+        user: userData,
+      };
     } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, message: error.message || 'Login failed' };
+      console.error("Login Error:", error);
+
+      return {
+        success: false,
+          message:
+            error.response?.data?.message || error.message || "Login failed",
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  // Register function
+  /**
+   * Register
+   */
   const register = async (userData) => {
     try {
       setLoading(true);
-      
-      // Call actual API to store user in database
-      const response = await authAPI.register(userData);
-      
-      if (response.success && response.data) {
-        // Registration successful - redirect to login page
-        // DO NOT auto-login, make user login with credentials
-        navigate('/login');
-        
-        return { 
-          success: true, 
-          message: 'Registration successful! Please login with your credentials.',
-          user: response.data.user 
+
+      const response =
+        await authAPI.register(userData);
+        const res = response.data || response;
+
+        if (!res.success) {
+          return {
+            success: false,
+            message: res.message || "Registration failed",
+          };
+        }
+
+        navigate(ROUTES.LOGIN);
+
+        return {
+          success: true,
+          message: res.message || "Registration successful! Please login.",
         };
-      } else {
-        return { success: false, message: response.message || 'Registration failed' };
-      }
     } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, message: error.message || 'Registration failed' };
+      console.error(
+        "Registration Error:",
+        error
+      );
+
+      return {
+        success: false,
+          message:
+            error.response?.data?.message || error.message || "Registration failed",
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout function
+  /**
+   * Logout
+   */
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
+    storage.clearAll();
+
     setUser(null);
-    navigate('/login');
+    setToken(null);
+
+    navigate(ROUTES.LOGIN);
   };
 
-  // Get user role
+  /**
+   * Check auth
+   */
+  const isAuthenticated = () => {
+    return Boolean(user && token);
+  };
+
+  /**
+   * Get role
+   */
   const getUserRole = () => {
     return user?.role || null;
   };
 
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!(token && user);
-  };
-
-  // Check if user has specific role
+  /**
+   * Role checker
+   */
   const hasRole = (requiredRole) => {
     return user?.role === requiredRole;
   };
 
-  // Role-based redirect helper
+  /**
+   * Redirect by role
+   */
   const redirectBasedOnRole = (role) => {
     switch (role) {
-      case 'admin':
-        navigate('/admin-dashboard');
+      case "admin":
+        navigate(ROUTES.ADMIN_DASHBOARD);
         break;
-      case 'buyer':
-        navigate('/buyer-dashboard');
+
+      case "buyer":
+        navigate(ROUTES.BUYER_DASHBOARD);
         break;
-      case 'artisan':
-        navigate('/artisan-dashboard');
+
+      case "artisan":
+        navigate(ROUTES.ARTISAN_DASHBOARD);
         break;
+
       default:
-        navigate('/');
+        navigate(ROUTES.HOME);
     }
   };
 
@@ -151,10 +205,15 @@ export function AuthProvider({ children }) {
     login,
     logout,
     register,
-    getUserRole,
     isAuthenticated,
+    getUserRole,
     hasRole,
+    redirectBasedOnRole,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

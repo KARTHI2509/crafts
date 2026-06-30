@@ -2,30 +2,27 @@
  * ============================================
  * AUTHENTICATION MIDDLEWARE
  * ============================================
- * Protects routes by verifying JWT tokens
- * - Checks if token exists in Authorization header
- * - Verifies token is valid
- * - Attaches user info to request object
  */
 
 import jwt from 'jsonwebtoken';
-import { findUserById } from '../models/userModel.js';
+import User from '../models/User.js';
 
 /**
- * Protect routes - User must be authenticated
- * Usage: Add this middleware before any route that needs authentication
+ * Protect routes
  */
 export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check if token exists in Authorization header
-    // Format: "Bearer <token>"
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Check Authorization header
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // If no token found, return error
+    // No token
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -37,24 +34,28 @@ export const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Get user from database (without password)
-      req.user = await findUserById(decoded.id);
+      // Get user from MongoDB
+      const user = await User.findById(decoded.id).select('-password');
 
-      if (!req.user) {
+      if (!user) {
         return res.status(401).json({
           success: false,
           message: 'User not found. Token may be invalid.'
         });
       }
 
-      // Continue to next middleware/route handler
+      // Attach user
+      req.user = user;
+
       next();
+
     } catch (error) {
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired token. Please login again.'
       });
     }
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -64,19 +65,17 @@ export const protect = async (req, res, next) => {
 };
 
 /**
- * Restrict to specific roles (e.g., admin only)
- * Usage: protect, restrictTo('admin'), routeHandler
- * @param  {...string} roles - Allowed roles
+ * Restrict by role
  */
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
-    // Check if user's role is in the allowed roles
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to perform this action'
       });
     }
+
     next();
   };
 };

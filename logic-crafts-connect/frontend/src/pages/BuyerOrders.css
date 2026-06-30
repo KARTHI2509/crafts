@@ -1,4 +1,6 @@
-/* Buyer Orders Page Styles */
+/* =====================================
+   Buyer Orders Page
+===================================== */
 .buyer-orders-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -6,112 +8,106 @@
   min-height: calc(100vh - 200px);
 }
 
+/* Main Container */
 .orders-container {
   background: white;
-  border: 2px solid #d4a574;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
+  box-shadow: var(--shadow);
 }
 
+/* Header */
 .orders-header {
   margin-bottom: 2rem;
 }
 
 .orders-header h1 {
-  color: #8b5a2b;
+  color: var(--primary);
   font-size: 2rem;
-  font-weight: 600;
-  margin: 0;
+  font-weight: 700;
 }
 
 .loading,
 .message {
   text-align: center;
   padding: 3rem;
-  color: #8b5a2b;
-  font-size: 1.2rem;
+  color: var(--primary);
+  font-size: 1.1rem;
 }
 
-/* Filter Tabs */
+/* =====================================
+   Filter Tabs
+===================================== */
 .filter-tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 0.5rem;
   flex-wrap: wrap;
+  background: white;
+  padding: 12px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 .filter-tabs button {
-  background: transparent;
+  background: #f5f5f5;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px 8px 0 0;
-  font-size: 0.95rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #666;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
+  transition: 0.3s ease;
 }
 
 .filter-tabs button:hover {
-  background: #f8f8f8;
-  color: #8b5a2b;
+  background: var(--secondary);
+  color: var(--primary);
 }
 
 .filter-tabs button.active {
-  background: #8b5a2b;
+  background: var(--primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.2);
 }
 
-.filter-tabs button.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #8b5a2b;
-}
-
-/* Empty State */
+/* =====================================
+   Empty State
+===================================== */
 .empty-orders {
   text-align: center;
   padding: 4rem 2rem;
 }
 
 .empty-icon {
-  font-size: 6rem;
+  font-size: 5rem;
   margin-bottom: 1rem;
-  opacity: 0.3;
+  opacity: 0.4;
 }
 
 .empty-orders h2 {
   color: #333;
-  font-size: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .start-shopping-btn {
-  background: #8b5a2b;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  border-radius: 8px;
+  padding: 0.85rem 2rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .start-shopping-btn:hover {
-  background: #6d4522;
+  background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 90, 43, 0.3);
 }
 
-/* Orders List */
+/* =====================================
+   Orders List
+===================================== */
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -119,53 +115,86 @@
 }
 
 .order-card {
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  background: white;
+  border-radius: 14px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
+  transition: 0.3s ease;
 }
 
 .order-card:hover {
-  border-color: #d4a574;
-  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.15);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
 }
 
+/* Card Header */
 .order-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
   background: #faf8f4;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #eee;
 }
 
 .order-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .order-number {
   color: #333;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
 .order-date {
-  color: #666;
+  color: #777;
   font-size: 0.9rem;
 }
 
+/* Status Badge */
 .order-status {
-  padding: 0.5rem 1.25rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 24px;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
+/* Status Colors */
+.status-placed {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-confirmed,
+.status-processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-shipped,
+.status-out_for_delivery {
+  background: #cffafe;
+  color: #0f766e;
+}
+
+.status-delivered {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-cancelled,
+.status-returned {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* =====================================
+   Order Body
+===================================== */
 .order-card-body {
   display: flex;
   justify-content: space-between;
@@ -181,47 +210,47 @@
 .detail-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .detail-item .label {
-  color: #666;
-  font-size: 0.85rem;
+  color: #777;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .detail-item .value {
   color: #333;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .total-amount {
-  color: #8b5a2b;
-  font-size: 1.5rem !important;
+  color: var(--primary) !important;
+  font-size: 1.4rem !important;
   font-weight: 700 !important;
 }
 
+/* Button */
 .view-details-btn {
-  background: #8b5a2b;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s ease;
 }
 
 .view-details-btn:hover {
-  background: #6d4522;
+  background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 90, 43, 0.3);
 }
 
-/* Responsive Design */
+/* =====================================
+   Responsive Design
+===================================== */
 @media (max-width: 768px) {
   .buyer-orders-page {
     padding: 1rem;
@@ -232,15 +261,15 @@
   }
 
   .orders-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .filter-tabs {
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
 
   .filter-tabs button {
-    padding: 0.5rem 1rem;
+    padding: 0.65rem 1rem;
     font-size: 0.85rem;
   }
 
@@ -248,10 +277,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
-  }
-
-  .order-status {
-    align-self: flex-start;
   }
 
   .order-card-body {
@@ -273,9 +298,8 @@
 @media (max-width: 480px) {
   .filter-tabs button {
     flex: 1;
-    min-width: auto;
-    padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
+    padding: 0.6rem;
   }
 
   .order-details {
@@ -284,10 +308,10 @@
   }
 
   .detail-item .value {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .total-amount {
-    font-size: 1.25rem !important;
+    font-size: 1.2rem !important;
   }
 }

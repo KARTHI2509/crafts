@@ -7,30 +7,27 @@
  */
 
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Get current directory in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables from .env file in root directory
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 /**
  * Connect to MongoDB database
  */
 export const connectDB = async () => {
+  if (!process.env.MONGODB_URI) {
+    throw new Error(
+      'MONGODB_URI is not defined. Make sure your .env file is loaded and contains MONGODB_URI.'
+    );
+  }
+
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
-    
+
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
-    return true;
+
+    return conn;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    throw error;
+    process.exit(1);
   }
 };
 
@@ -40,7 +37,7 @@ mongoose.connection.on('connected', () => {
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('Mongoose connection error:', err);
+  console.error('Mongoose connection error:', err.message);
 });
 
 mongoose.connection.on('disconnected', () => {

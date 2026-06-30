@@ -1,0 +1,120 @@
+.upload-craft {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.upload-craft h2 {
+  color: #8b5a2b;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-craft p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.upload-craft .form {
+  background: white;
+  border: 2px solid #d4a574;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+.input:focus {
+  border-color: #8b5a2b;
+  box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #8b5a2b;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn:hover:not(:disabled) {
+  background: #6d4522;
+}
+
+.btn.secondary {
+  background: #ddd;
+  color: #333;
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: #bbb;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .upload-craft {
+    padding: 1rem;
+  }
+
+  .upload-craft .form {
+    padding: 1.5rem;
+  }
+
+  .row {
+    flex-direction: column;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

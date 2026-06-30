@@ -1,16 +1,24 @@
+/* =====================================
+   Artisan Orders Page
+===================================== */
 .artisan-orders-page {
   min-height: 100vh;
   background: var(--bg);
-  padding: 24px 0;
+  padding: 30px 0;
 }
 
+/* =====================================
+   Page Header
+===================================== */
 .page-header {
   margin-bottom: 32px;
 }
 
 .page-header h2 {
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .page-header p {
@@ -18,10 +26,12 @@
   font-size: 14px;
 }
 
-/* Statistics Overview */
+/* =====================================
+   Statistics Overview
+===================================== */
 .stats-overview {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
   box-shadow: var(--shadow);
   margin-bottom: 24px;
@@ -32,28 +42,28 @@
   margin-bottom: 20px;
   font-size: 18px;
   border-bottom: 2px solid var(--secondary);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 18px;
   background: #fafafa;
-  border-radius: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card.highlight {
@@ -62,26 +72,21 @@
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   flex-shrink: 0;
-}
-
-.stat-info {
-  flex: 1;
+  background: white;
 }
 
 .stat-value {
   font-size: 28px;
-  font-weight: bold;
+  font-weight: 700;
   color: var(--primary);
-  line-height: 1;
-  margin-bottom: 4px;
 }
 
 .stat-label {
@@ -91,28 +96,29 @@
   letter-spacing: 0.5px;
 }
 
-/* Filter Tabs */
+/* =====================================
+   Filter Tabs
+===================================== */
 .filter-tabs {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 24px;
   flex-wrap: wrap;
   background: white;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 14px;
   box-shadow: var(--shadow);
 }
 
 .filter-tabs button {
-  padding: 10px 20px;
+  padding: 10px 18px;
   background: #f5f5f5;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   color: #666;
-  transition: all 0.2s;
-  white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
 .filter-tabs button:hover {
@@ -125,62 +131,67 @@
   color: white;
 }
 
-/* Orders List */
+/* =====================================
+   Orders List
+===================================== */
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .order-card {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 22px;
   box-shadow: var(--shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
 }
 
 .order-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
 }
 
+/* Order Header */
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f2f2f2;
 }
 
 .order-info h4 {
   color: var(--primary);
   font-size: 18px;
-  margin: 0 0 4px 0;
+  margin-bottom: 4px;
 }
 
 .buyer-name {
   color: #666;
   font-size: 14px;
-  margin: 0;
 }
 
+/* Status Badge */
 .status-badge {
   padding: 6px 16px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bold;
   color: white;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
+/* =====================================
+   Order Body
+===================================== */
 .order-body {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 20px;
-  margin-bottom: 16px;
+  gap: 22px;
+  margin-bottom: 18px;
 }
 
 .order-details {
@@ -192,59 +203,62 @@
 .detail-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .detail-item .label {
   color: #666;
   font-size: 14px;
-  font-weight: 500;
 }
 
 .detail-item .value {
   color: #333;
-  font-size: 14px;
   font-weight: 600;
 }
 
 .detail-item .total-amount {
   color: var(--primary);
   font-size: 18px;
+  font-weight: 700;
 }
 
+/* =====================================
+   Order Items Preview
+===================================== */
 .order-items-preview {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .item-preview {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 10px;
+  transition: 0.2s ease;
+}
+
+.item-preview:hover {
+  background: #f3f3f3;
 }
 
 .item-preview img {
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .item-preview span {
   flex: 1;
   font-size: 14px;
-  color: #333;
 }
 
 .item-preview .quantity {
-  flex: none;
   color: #666;
   font-weight: bold;
-  font-size: 14px;
 }
 
 .more-items {
@@ -254,6 +268,9 @@
   font-style: italic;
 }
 
+/* =====================================
+   Order Actions
+===================================== */
 .order-actions {
   display: flex;
   gap: 12px;
@@ -261,13 +278,12 @@
 }
 
 .btn {
-  padding: 10px 24px;
+  padding: 10px 22px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
+  transition: all 0.3s ease;
 }
 
 .btn-primary {
@@ -276,27 +292,29 @@
 }
 
 .btn-primary:hover {
+  transform: translateY(-2px);
   background: #6d4621;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.3);
+  box-shadow: 0 6px 14px rgba(139, 90, 43, 0.25);
 }
 
 .btn-danger {
-  background: #f44336;
+  background: #ef4444;
   color: white;
 }
 
 .btn-danger:hover {
-  background: #d32f2f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  transform: translateY(-2px);
+  background: #dc2626;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.25);
 }
 
-/* No Orders */
+/* =====================================
+   Empty State
+===================================== */
 .no-orders {
   background: white;
-  border-radius: 12px;
-  padding: 60px 24px;
+  border-radius: 16px;
+  padding: 70px 24px;
   text-align: center;
   box-shadow: var(--shadow);
 }
@@ -304,10 +322,11 @@
 .no-orders p {
   color: #999;
   font-size: 16px;
-  margin: 0;
 }
 
-/* Loading */
+/* =====================================
+   Loading
+===================================== */
 .loading {
   text-align: center;
   padding: 60px;
@@ -315,10 +334,12 @@
   font-size: 18px;
 }
 
-/* Responsive Design */
+/* =====================================
+   Responsive Design
+===================================== */
 @media (max-width: 992px) {
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 
   .order-body {
@@ -330,7 +351,7 @@
   .order-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
   }
 
   .order-actions {
@@ -357,7 +378,7 @@
   }
 
   .stat-card {
-    padding: 12px;
+    padding: 14px;
   }
 
   .stat-icon {

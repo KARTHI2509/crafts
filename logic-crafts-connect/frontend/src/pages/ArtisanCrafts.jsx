@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 import "./ArtisanCrafts.css";
@@ -10,223 +11,192 @@ export default function ArtisanCrafts() {
   const { language } = useContext(LanguageContext);
   const navigate = useNavigate();
 
+  // -----------------------------
+  // States
+  // -----------------------------
   const [crafts, setCrafts] = useState([]);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
+  const API_URL = "http://localhost:5000/api";
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  // -----------------------------
+  // Language Content
+  // -----------------------------
   const content = {
     en: {
       title: "My Crafts",
-      subtitle: "Manage your product listings and track performance",
+      subtitle: "Manage your products and track performance",
       addNew: "+ Add New Craft",
       overview: "Overview",
-      totalCrafts: "Total Crafts",
-      totalViews: "Total Views",
-      totalSaves: "Total Saves",
-      totalOrders: "Total Orders",
-      featured: "Featured",
-      approved: "Approved",
-      pending: "Pending Review",
-      filters: {
-        all: "All Crafts",
-        approved: "Approved",
-        pending: "Pending",
-        featured: "Featured",
-        newArrival: "New Arrivals",
-      },
-      noCrafts: "No crafts found. Start by uploading your first craft!",
-      price: "Price",
-      stock: "Stock",
-      views: "Views",
-      saves: "Saves",
-      orders: "Orders",
-      edit: "Edit",
-      delete: "Delete",
-      status: "Status",
-      deliveryDays: "days delivery",
+      noCrafts: "No crafts available. Upload your first craft!",
       confirmDelete: "Are you sure you want to delete this craft?",
       deleteSuccess: "Craft deleted successfully",
       deleteError: "Failed to delete craft",
-    },
-    te: {
-      title: "నా హస్తకళలు",
-      subtitle: "మీ ఉత్పత్తి జాబితాలను నిర్వహించండి మరియు పనితీరును ట్రాక్ చేయండి",
-      addNew: "+ కొత్త హస్తకళను జోడించండి",
-      overview: "సమీక్ష",
-      totalCrafts: "మొత్తం హస్తకళలు",
-      totalViews: "మొత్తం వీక్షణలు",
-      totalSaves: "మొత్తం సేవ్‌లు",
-      totalOrders: "మొత్తం ఆర్డర్లు",
-      featured: "ఫీచర్డ్",
-      approved: "ఆమోదించబడింది",
-      pending: "సమీక్ష పెండింగ్‌లో",
-      noCrafts: "హస్తకళలు కనుగొనబడలేదు. మీ మొదటి హస్తకళను అప్‌లోడ్ చేయడం ద్వారా ప్రారంభించండి!",
-      price: "ధర",
-      stock: "స్టాక్",
-      views: "వీక్షణలు",
-      saves: "సేవ్‌లు",
-      orders: "ఆర్డర్లు",
-      edit: "సవరించు",
-      delete: "తొలగించు",
-      status: "స్థితి",
-      deliveryDays: "రోజుల డెలివరీ",
-      confirmDelete: "మీరు ఖచ్చితంగా ఈ హస్తకళను తొలగించాలనుకుంటున్నారా?",
-      deleteSuccess: "హస్తకళ విజయవంతంగా తొలగించబడింది",
-      deleteError: "హస్తకళ తొలగించడం విఫలమైంది",
     },
   };
 
   const t = content[language] || content.en;
 
+  // -----------------------------
+  // Initial Load
+  // -----------------------------
   useEffect(() => {
-    console.log('Auth loading:', authLoading);
-    console.log('User object:', user);
-    
-    // Wait for auth context to finish loading
-    if (authLoading) {
-      console.log('Still loading auth context');
-      return;
-    }
-    
-    if (user && user.role === "artisan") {
-      console.log('Fetching crafts for artisan');
-      fetchCrafts();
-      fetchStats();
-    } else if (user === null) {
-      // Not authenticated
-      console.log('User not authenticated');
-      setLoading(false);
+    if (authLoading) return;
+
+    if (user?.role === "artisan") {
+      loadData();
     } else {
-      console.log('User not qualified to fetch crafts:', user);
       setLoading(false);
     }
   }, [user, authLoading]);
 
-  const fetchCrafts = async () => {
+  // Load all data
+  const loadData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      console.log('Token:', token);
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      
-      const response = await axios.get("http://localhost:5000/api/crafts/my-crafts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      console.log('Crafts response:', response.data);
-      if (response.data.success) {
-        setCrafts(response.data.data.crafts);
-        setError(null);
-      }
+      setLoading(true);
+      await Promise.all([fetchCrafts(), fetchStats()]);
     } catch (error) {
-      console.error("Fetch crafts error:", error);
-      console.error("Error response:", error.response?.data);
-      setError(error.response?.data?.message || error.message || 'Failed to fetch crafts');
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStats = async () => {
+  // -----------------------------
+  // Fetch Crafts
+  // -----------------------------
+  const fetchCrafts = async () => {
     try {
-      const token = localStorage.getItem("token");
-      console.log('Fetching stats with token:', token);
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      
-      const response = await axios.get("http://localhost:5000/api/crafts/artisan/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${API_URL}/crafts/my-crafts`,
+        { headers }
+      );
 
-      console.log('Stats response:', response.data);
       if (response.data.success) {
-        setStats(response.data.data.stats);
-        setError(null);
+        setCrafts(response.data.data.crafts);
+        setError("");
       }
     } catch (error) {
-      console.error("Fetch stats error:", error);
-      console.error("Stats error response:", error.response?.data);
-      setError(prev => prev || (error.response?.data?.message || error.message || 'Failed to fetch stats'));
+      setError(
+        error.response?.data?.message || "Failed to fetch crafts"
+      );
     }
   };
 
+  // -----------------------------
+  // Fetch Stats
+  // -----------------------------
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/crafts/artisan/stats`,
+        { headers }
+      );
+
+      if (response.data.success) {
+        setStats(response.data.data.stats);
+      }
+    } catch (error) {
+      setError(
+        error.response?.data?.message || "Failed to fetch stats"
+      );
+    }
+  };
+
+  // -----------------------------
+  // Delete Craft
+  // -----------------------------
   const handleDelete = async (craftId) => {
     if (!window.confirm(t.confirmDelete)) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.delete(`http://localhost:5000/api/crafts/${craftId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.delete(
+        `${API_URL}/crafts/${craftId}`,
+        { headers }
+      );
 
       if (response.data.success) {
         alert(t.deleteSuccess);
-        fetchCrafts();
-        fetchStats();
+        loadData();
       }
-    } catch (error) {
-      console.error("Delete error:", error);
+    } catch {
       alert(t.deleteError);
     }
   };
 
-  const toggleVisibility = async (craftId, currentVisibility) => {
+  // -----------------------------
+  // Toggle Visibility
+  // -----------------------------
+  const toggleVisibility = async (
+    craftId,
+    currentVisibility
+  ) => {
     try {
-      const token = localStorage.getItem("token");
-      const newVisibility = currentVisibility === 'public' ? 'hidden' : 'public';
-      
-      const response = await axios.patch(
-        `http://localhost:5000/api/crafts/${craftId}/visibility`,
+      const newVisibility =
+        currentVisibility === "public"
+          ? "hidden"
+          : "public";
+
+      await axios.patch(
+        `${API_URL}/crafts/${craftId}/visibility`,
         { visibility: newVisibility },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers }
       );
 
-      if (response.data.success) {
-        fetchCrafts(); // Refresh the list
-        fetchStats();  // Refresh stats
-      }
-    } catch (error) {
-      console.error("Visibility toggle error:", error);
-      alert("Failed to toggle visibility");
+      loadData();
+    } catch {
+      alert("Failed to update visibility");
     }
   };
 
+  // -----------------------------
+  // Filter Crafts
+  // -----------------------------
   const filteredCrafts = crafts.filter((craft) => {
-    if (filter === "all") return true;
-    if (filter === "approved") return craft.status === "approved";
-    if (filter === "pending") return craft.status === "pending";
-    if (filter === "featured") return craft.is_featured === true;
-    if (filter === "newArrival") return craft.is_new_arrival === true;
-    return true;
+    const filters = {
+      approved: craft.status === "approved",
+      pending: craft.status === "pending",
+      featured: craft.is_featured,
+      newArrival: craft.is_new_arrival,
+    };
+
+    return filter === "all" ? true : filters[filter];
   });
 
+  // -----------------------------
+  // Status Badge
+  // -----------------------------
   const getStatusBadge = (status) => {
-    const badges = {
-      approved: { text: t.approved, color: "#22c55e" },
-      pending: { text: t.pending, color: "#f59e0b" },
-      rejected: { text: "Rejected", color: "#ef4444" },
+    const colors = {
+      approved: "#22c55e",
+      pending: "#f59e0b",
+      rejected: "#ef4444",
     };
-    const badge = badges[status] || badges.pending;
+
     return (
-      <span className="status-badge" style={{ background: badge.color }}>
-        {badge.text}
+      <span
+        className="status-badge"
+        style={{
+          background: colors[status] || colors.pending,
+        }}
+      >
+        {status}
       </span>
     );
   };
 
-  if (authLoading) {
-    return (
-      <div className="container">
-        <div className="loading">Authenticating...</div>
-      </div>
-    );
-  }
-  
-  if (loading) {
+  // -----------------------------
+  // Loading UI
+  // -----------------------------
+  if (authLoading || loading) {
     return (
       <div className="container">
         <div className="loading">Loading your crafts...</div>
@@ -234,11 +204,16 @@ export default function ArtisanCrafts() {
     );
   }
 
+  // -----------------------------
+  // Error UI
+  // -----------------------------
   if (error) {
     return (
       <div className="container">
-        <div className="error">Error: {error}</div>
-        <button onClick={() => { fetchCrafts(); fetchStats(); }} className="btn">Retry</button>
+        <div className="error">{error}</div>
+        <button className="btn" onClick={loadData}>
+          Retry
+        </button>
       </div>
     );
   }
@@ -246,117 +221,63 @@ export default function ArtisanCrafts() {
   return (
     <div className="artisan-crafts-page">
       <div className="container">
-        {/* Header */}
+
+        {/* Page Header */}
         <div className="page-header">
           <div>
             <h2>{t.title}</h2>
             <p>{t.subtitle}</p>
           </div>
-          <button className="btn" onClick={() => navigate("/upload-craft-enhanced")}>
+
+          <button
+            className="btn"
+            onClick={() =>
+              navigate("/upload-craft-enhanced")
+            }
+          >
             {t.addNew}
           </button>
         </div>
 
-        {/* Statistics Overview */}
+        {/* Stats Overview */}
         {stats && (
           <div className="stats-overview">
             <h3>{t.overview}</h3>
             <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#e3f2fd" }}>
-                  📦
+              {[
+                ["📦", stats.total_crafts],
+                ["👁️", stats.total_views],
+                ["❤️", stats.total_saves],
+                ["🛒", stats.total_orders],
+                ["⭐", stats.featured_count],
+                ["✅", stats.approved_count],
+              ].map(([icon, value], index) => (
+                <div key={index} className="stat-card">
+                  <div className="stat-icon">{icon}</div>
+                  <div className="stat-value">{value || 0}</div>
                 </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.total_crafts || 0}</div>
-                  <div className="stat-label">{t.totalCrafts}</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#f3e5f5" }}>
-                  👁️
-                </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.total_views || 0}</div>
-                  <div className="stat-label">{t.totalViews}</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#fff3e0" }}>
-                  ❤️
-                </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.total_saves || 0}</div>
-                  <div className="stat-label">{t.totalSaves}</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#e8f5e9" }}>
-                  🛒
-                </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.total_orders || 0}</div>
-                  <div className="stat-label">{t.totalOrders}</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#fce4ec" }}>
-                  ⭐
-                </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.featured_count || 0}</div>
-                  <div className="stat-label">{t.featured}</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: "#e0f2f1" }}>
-                  ✅
-                </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats.approved_count || 0}</div>
-                  <div className="stat-label">{t.approved}</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filter Tabs */}
         <div className="filter-tabs">
-          <button
-            className={filter === "all" ? "active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            {t.filters.all}
-          </button>
-          <button
-            className={filter === "approved" ? "active" : ""}
-            onClick={() => setFilter("approved")}
-          >
-            {t.filters.approved}
-          </button>
-          <button
-            className={filter === "pending" ? "active" : ""}
-            onClick={() => setFilter("pending")}
-          >
-            {t.filters.pending}
-          </button>
-          <button
-            className={filter === "featured" ? "active" : ""}
-            onClick={() => setFilter("featured")}
-          >
-            {t.filters.featured}
-          </button>
-          <button
-            className={filter === "newArrival" ? "active" : ""}
-            onClick={() => setFilter("newArrival")}
-          >
-            {t.filters.newArrival}
-          </button>
+          {[
+            "all",
+            "approved",
+            "pending",
+            "featured",
+            "newArrival",
+          ].map((item) => (
+            <button
+              key={item}
+              className={filter === item ? "active" : ""}
+              onClick={() => setFilter(item)}
+            >
+              {item}
+            </button>
+          ))}
         </div>
 
         {/* Crafts List */}
@@ -368,72 +289,61 @@ export default function ArtisanCrafts() {
           ) : (
             filteredCrafts.map((craft) => (
               <div key={craft.id} className="craft-item">
+
+                {/* Craft Image */}
                 <div className="craft-image">
                   <img
-                    src={craft.image_url || craft.images?.[0] || "/placeholder.jpg"}
+                    src={
+                      craft.image_url ||
+                      craft.images?.[0] ||
+                      "/placeholder.jpg"
+                    }
                     alt={craft.name}
                   />
-                  {craft.is_featured && <span className="badge featured">⭐ {t.featured}</span>}
-                  {craft.is_new_arrival && <span className="badge new">🆕 New</span>}
                 </div>
 
+                {/* Craft Details */}
                 <div className="craft-details">
                   <div className="craft-header">
                     <h4>{craft.name}</h4>
                     {getStatusBadge(craft.status)}
                   </div>
 
-                  <p className="craft-description">{craft.description}</p>
-
-                  <div className="craft-meta">
-                    <span className="meta-item">
-                      💰 {t.price}: ₹{craft.price}
-                    </span>
-                    <span className="meta-item">
-                      📦 {t.stock}: {craft.stock || 0}
-                    </span>
-                    <span className="meta-item">
-                      🚚 {craft.delivery_days || 7} {t.deliveryDays}
-                    </span>
-                  </div>
-
-                  <div className="craft-stats">
-                    <span className="stat-item">
-                      👁️ {craft.view_count || 0} {t.views}
-                    </span>
-                    <span className="stat-item">
-                      ❤️ {craft.save_count || 0} {t.saves}
-                    </span>
-                    <span className="stat-item">
-                      🛒 {craft.order_count || 0} {t.orders}
-                    </span>
-                  </div>
-
-                  <div className="craft-tags">
-                    {craft.made_to_order && <span className="tag">Made to Order</span>}
-                    {craft.limited_edition && <span className="tag">Limited Edition</span>}
-                  </div>
+                  <p className="craft-description">
+                    {craft.description}
+                  </p>
                 </div>
 
+                {/* Action Buttons */}
                 <div className="craft-actions">
                   <button
                     className="btn-icon visibility"
-                    onClick={() => toggleVisibility(craft.id, craft.visibility)}
-                    title={craft.visibility === 'public' ? 'Hide from public' : 'Make public'}
+                    onClick={() =>
+                      toggleVisibility(
+                        craft.id,
+                        craft.visibility
+                      )
+                    }
                   >
-                    {craft.visibility === 'public' ? '👁️' : '🙈'}
+                    {craft.visibility === "public"
+                      ? "👁️"
+                      : "🙈"}
                   </button>
+
                   <button
                     className="btn-icon edit"
-                    onClick={() => navigate(`/crafts/edit/${craft.id}`)}
-                    title={t.edit}
+                    onClick={() =>
+                      navigate(`/crafts/edit/${craft.id}`)
+                    }
                   >
                     ✏️
                   </button>
+
                   <button
                     className="btn-icon delete"
-                    onClick={() => handleDelete(craft.id)}
-                    title={t.delete}
+                    onClick={() =>
+                      handleDelete(craft.id)
+                    }
                   >
                     🗑️
                   </button>
@@ -442,6 +352,7 @@ export default function ArtisanCrafts() {
             ))
           )}
         </div>
+
       </div>
     </div>
   );

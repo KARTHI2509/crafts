@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   LineChart,
@@ -16,15 +15,56 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { motion } from "framer-motion";
+
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 import "./ArtisanAnalytics.css";
 
+function AnimatedMetric({ value }) {
+  const [displayValue, setDisplayValue] = useState("");
+  useEffect(() => {
+    const str = String(value);
+    const hasRupee = str.startsWith("₹");
+    const hasPercent = str.endsWith("%");
+    const numericStr = str.replace(/[^\d.]/g, "");
+    const end = parseFloat(numericStr) || 0;
+    
+    if (end === 0) {
+      setDisplayValue(str);
+      return;
+    }
+    
+    let start = 0;
+    const duration = 1.0;
+    const incrementTime = 25;
+    const totalSteps = (duration * 1000) / incrementTime;
+    const step = end / totalSteps;
+
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplayValue((hasRupee ? "₹" : "") + end.toLocaleString() + (hasPercent ? "%" : ""));
+      } else {
+        const formatted = start.toFixed(str.includes(".") ? 1 : 0);
+        setDisplayValue((hasRupee ? "₹" : "") + parseFloat(formatted).toLocaleString() + (hasPercent ? "%" : ""));
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return <span>{displayValue || value}</span>;
+}
+
 export default function ArtisanAnalytics() {
   const { user } = useContext(AuthContext);
   const { language } = useContext(LanguageContext);
-  const navigate = useNavigate();
 
+  // ---------------------------
+  // State Management
+  // ---------------------------
   const [orderStats, setOrderStats] = useState(null);
   const [craftStats, setCraftStats] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
@@ -32,6 +72,12 @@ export default function ArtisanAnalytics() {
   const [period, setPeriod] = useState("monthly");
   const [loading, setLoading] = useState(true);
 
+  const API_URL = "http://localhost:5000/api";
+  const token = localStorage.getItem("token");
+
+  // ---------------------------
+  // Multi-language Content
+  // ---------------------------
   const content = {
     en: {
       title: "Analytics & Insights",
@@ -45,7 +91,6 @@ export default function ArtisanAnalytics() {
       revenue: "Revenue Trends",
       topProducts: "Top Selling Products",
       orderDistribution: "Order Status Distribution",
-      performance: "Performance Metrics",
       totalRevenue: "Total Revenue",
       avgOrderValue: "Avg Order Value",
       totalOrders: "Total Orders",
@@ -55,28 +100,26 @@ export default function ArtisanAnalytics() {
       conversionRate: "Conversion Rate",
       noData: "No data available yet",
     },
-    te: {
-      title: "విశ్లేషణ & అంతర్దృష్టులు",
-      subtitle: "మీ వ్యాపార పనితీరు మరియు వృద్ధిని ట్రాక్ చేయండి",
-      revenue: "ఆదాయ ధోరణులు",
-      topProducts: "టాప్ సెల్లింగ్ ఉత్పత్తులు",
-      totalRevenue: "మొత్తం ఆదాయం",
-      avgOrderValue: "సగటు ఆర్డర్ విలువ",
-      totalOrders: "మొత్తం ఆర్డర్లు",
-      noData: "ఇంకా డేటా అందుబాటులో లేదు",
-    },
   };
 
   const t = content[language] || content.en;
 
+  // ---------------------------
+  // Fetch Data on Load
+  // ---------------------------
   useEffect(() => {
-    if (user && user.role === "artisan") {
-      fetchAllData();
+    if (user?.role === "artisan") {
+      fetchAnalytics();
     }
-  }, [user, period]);
+  }, [period, user]);
 
-  const fetchAllData = async () => {
+  // ---------------------------
+  // Fetch All Analytics
+  // ---------------------------
+  const fetchAnalytics = async () => {
     try {
+      setLoading(true);
+
       await Promise.all([
         fetchOrderStats(),
         fetchCraftStats(),
@@ -84,150 +127,124 @@ export default function ArtisanAnalytics() {
         fetchTopCrafts(),
       ]);
     } catch (error) {
-      console.error("Fetch data error:", error);
+      console.error("Analytics fetch error:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------------------------
+  // Order Stats
+  // ---------------------------
   const fetchOrderStats = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:5000/api/orders/artisan/stats",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+    const response = await axios.get(
+      `${API_URL}/orders/artisan/stats`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (response.data.success) {
-        setOrderStats(response.data.data.stats);
-      }
-    } catch (error) {
-      console.error("Fetch order stats error:", error);
+    if (response.data.success) {
+      setOrderStats(response.data.data.stats);
     }
   };
 
+  // ---------------------------
+  // Craft Stats
+  // ---------------------------
   const fetchCraftStats = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:5000/api/crafts/artisan/stats",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+    const response = await axios.get(
+      `${API_URL}/crafts/artisan/stats`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (response.data.success) {
-        setCraftStats(response.data.data.stats);
-      }
-    } catch (error) {
-      console.error("Fetch craft stats error:", error);
+    if (response.data.success) {
+      setCraftStats(response.data.data.stats);
     }
   };
 
+  // ---------------------------
+  // Revenue Trends
+  // ---------------------------
   const fetchRevenueData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `http://localhost:5000/api/orders/artisan/revenue?period=${period}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+    const response = await axios.get(
+      `${API_URL}/orders/artisan/revenue?period=${period}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (response.data.success) {
-        const data = response.data.data.revenue.reverse().map((item) => ({
+    if (response.data.success) {
+      const formattedData = response.data.data.revenue
+        .reverse()
+        .map((item) => ({
           period: item.period,
-          revenue: parseFloat(item.revenue),
-          orders: parseInt(item.order_count),
-          avgValue: parseFloat(item.avg_order_value),
+          revenue: Number(item.revenue),
+          orders: Number(item.order_count),
+          avgValue: Number(item.avg_order_value),
         }));
-        setRevenueData(data);
-      }
-    } catch (error) {
-      console.error("Fetch revenue data error:", error);
+
+      setRevenueData(formattedData);
     }
   };
 
+  // ---------------------------
+  // Top Crafts
+  // ---------------------------
   const fetchTopCrafts = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/crafts/my-crafts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const response = await axios.get(
+      `${API_URL}/crafts/my-crafts`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      if (response.data.success) {
-        const crafts = response.data.data.crafts
-          .filter((c) => c.order_count > 0)
-          .sort((a, b) => b.order_count - a.order_count)
-          .slice(0, 5)
-          .map((craft) => ({
-            name: craft.name.length > 20 ? craft.name.substring(0, 20) + "..." : craft.name,
-            orders: craft.order_count,
-            revenue: craft.order_count * craft.price,
-          }));
-        setTopCrafts(crafts);
-      }
-    } catch (error) {
-      console.error("Fetch top crafts error:", error);
+    if (response.data.success) {
+      const formattedCrafts = response.data.data.crafts
+        .filter((craft) => craft.order_count > 0)
+        .sort((a, b) => b.order_count - a.order_count)
+        .slice(0, 5)
+        .map((craft) => ({
+          name:
+            craft.name.length > 20
+              ? craft.name.slice(0, 20) + "..."
+              : craft.name,
+          orders: craft.order_count,
+          revenue: craft.order_count * craft.price,
+        }));
+
+      setTopCrafts(formattedCrafts);
     }
   };
 
-  const formatCurrency = (value) => {
-    return `₹${parseFloat(value).toLocaleString("en-IN")}`;
-  };
+  // Currency Formatter
+  const formatCurrency = (value) =>
+    `₹${Number(value).toLocaleString("en-IN")}`;
 
-  const getOrderDistributionData = () => {
-    if (!orderStats) return [];
+  // Order Distribution Chart Data
+  const orderDistribution = orderStats
+    ? [
+        { name: "New", value: +orderStats.new_orders, color: "#2196f3" },
+        { name: "Pending", value: +orderStats.pending_orders, color: "#ff9800" },
+        { name: "Shipped", value: +orderStats.shipped_orders, color: "#00bcd4" },
+        { name: "Completed", value: +orderStats.completed_orders, color: "#4caf50" },
+        { name: "Cancelled", value: +orderStats.cancelled_orders, color: "#f44336" },
+      ].filter((item) => item.value > 0)
+    : [];
 
-    return [
-      { name: "New", value: parseInt(orderStats.new_orders || 0), color: "#2196f3" },
-      {
-        name: "In Progress",
-        value: parseInt(orderStats.pending_orders || 0),
-        color: "#ff9800",
-      },
-      {
-        name: "Shipped",
-        value: parseInt(orderStats.shipped_orders || 0),
-        color: "#00bcd4",
-      },
-      {
-        name: "Completed",
-        value: parseInt(orderStats.completed_orders || 0),
-        color: "#4caf50",
-      },
-      {
-        name: "Cancelled",
-        value: parseInt(orderStats.cancelled_orders || 0),
-        color: "#f44336",
-      },
-    ].filter((item) => item.value > 0);
-  };
+  // Calculated Metrics
+  const completionRate = orderStats
+    ? (
+        (+orderStats.completed_orders /
+          Math.max(+orderStats.total_orders, 1)) *
+        100
+      ).toFixed(1)
+    : 0;
 
-  const calculateMetrics = () => {
-    const completionRate = orderStats
+  const conversionRate =
+    craftStats && orderStats
       ? (
-          (parseInt(orderStats.completed_orders) /
-            Math.max(parseInt(orderStats.total_orders), 1)) *
-          100
-        ).toFixed(1)
-      : 0;
-
-    const conversionRate = craftStats && orderStats
-      ? (
-          (parseInt(orderStats.total_orders) /
-            Math.max(parseInt(craftStats.total_views), 1)) *
+          (+orderStats.total_orders /
+            Math.max(+craftStats.total_views, 1)) *
           100
         ).toFixed(2)
       : 0;
 
-    return { completionRate, conversionRate };
-  };
-
-  const { completionRate, conversionRate } = calculateMetrics();
-
+  // Loading UI
   if (loading) {
     return (
       <div className="container">
@@ -239,12 +256,15 @@ export default function ArtisanAnalytics() {
   return (
     <div className="artisan-analytics-page">
       <div className="container">
+
         {/* Header */}
         <div className="page-header">
           <div>
             <h2>{t.title}</h2>
             <p>{t.subtitle}</p>
           </div>
+
+          {/* Period Selector */}
           <div className="period-selector">
             {Object.keys(t.period).map((key) => (
               <button
@@ -258,198 +278,107 @@ export default function ArtisanAnalytics() {
           </div>
         </div>
 
-        {/* Performance Metrics */}
+        {/* Metrics Section */}
         <div className="metrics-grid">
-          <div className="metric-card highlight">
-            <div className="metric-icon">💰</div>
-            <div className="metric-info">
-              <div className="metric-value">
-                {formatCurrency(orderStats?.total_revenue || 0)}
+          {[
+            ["💰", formatCurrency(orderStats?.total_revenue || 0), t.totalRevenue],
+            ["📊", formatCurrency(orderStats?.average_order_value || 0), t.avgOrderValue],
+            ["📦", orderStats?.total_orders || 0, t.totalOrders],
+            ["✅", `${completionRate}%`, t.completionRate],
+            ["🎨", craftStats?.total_crafts || 0, t.totalCrafts],
+            ["👁️", craftStats?.total_views || 0, t.totalViews],
+            ["📈", `${conversionRate}%`, t.conversionRate],
+          ].map(([icon, value, label], index) => (
+            <motion.div
+              key={index}
+              className={`metric-card ${index === 0 ? "highlight" : ""}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <div className="metric-icon">{icon}</div>
+              <div className="metric-info">
+                <div className="metric-value">
+                  <AnimatedMetric value={value} />
+                </div>
+                <div className="metric-label">{label}</div>
               </div>
-              <div className="metric-label">{t.totalRevenue}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">📊</div>
-            <div className="metric-info">
-              <div className="metric-value">
-                {formatCurrency(orderStats?.average_order_value || 0)}
-              </div>
-              <div className="metric-label">{t.avgOrderValue}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">📦</div>
-            <div className="metric-info">
-              <div className="metric-value">{orderStats?.total_orders || 0}</div>
-              <div className="metric-label">{t.totalOrders}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">✅</div>
-            <div className="metric-info">
-              <div className="metric-value">{completionRate}%</div>
-              <div className="metric-label">{t.completionRate}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">🎨</div>
-            <div className="metric-info">
-              <div className="metric-value">{craftStats?.total_crafts || 0}</div>
-              <div className="metric-label">{t.totalCrafts}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">👁️</div>
-            <div className="metric-info">
-              <div className="metric-value">{craftStats?.total_views || 0}</div>
-              <div className="metric-label">{t.totalViews}</div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">📈</div>
-            <div className="metric-info">
-              <div className="metric-value">{conversionRate}%</div>
-              <div className="metric-label">{t.conversionRate}</div>
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Charts Grid */}
+        {/* Charts Section */}
         <div className="charts-grid">
-          {/* Revenue Trends */}
-          <div className="chart-card full-width">
-            <h3>{t.revenue}</h3>
-            {revenueData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="period"
-                    stroke="#666"
-                    style={{ fontSize: "12px" }}
-                  />
-                  <YAxis
-                    stroke="#666"
-                    style={{ fontSize: "12px" }}
-                    tickFormatter={(value) => `₹${value}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "white",
-                      border: "1px solid #ddd",
-                      borderRadius: "8px",
-                    }}
-                    formatter={(value, name) => {
-                      if (name === "revenue" || name === "avgValue") {
-                        return [`₹${value}`, name === "revenue" ? "Revenue" : "Avg Value"];
-                      }
-                      return [value, "Orders"];
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#8b5a2b"
-                    strokeWidth={3}
-                    dot={{ fill: "#8b5a2b", r: 5 }}
-                    activeDot={{ r: 7 }}
-                    name="Revenue"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="orders"
-                    stroke="#4caf50"
-                    strokeWidth={2}
-                    dot={{ fill: "#4caf50", r: 4 }}
-                    name="Orders"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="no-data">{t.noData}</div>
-            )}
-          </div>
 
-          {/* Top Selling Products */}
-          <div className="chart-card">
+          {/* Revenue Chart */}
+          <motion.div 
+            className="chart-card full-width"
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h3>{t.revenue}</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="revenue" stroke="#8b5a2b" strokeWidth={3} isAnimationActive={true} animationDuration={1200} />
+                <Line dataKey="orders" stroke="#4caf50" strokeWidth={2} isAnimationActive={true} animationDuration={1200} />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Top Products */}
+          <motion.div 
+            className="chart-card"
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+          >
             <h3>{t.topProducts}</h3>
-            {topCrafts.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topCrafts}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#666"
-                    style={{ fontSize: "11px" }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis stroke="#666" style={{ fontSize: "12px" }} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "white",
-                      border: "1px solid #ddd",
-                      borderRadius: "8px",
-                    }}
-                    formatter={(value, name) => [
-                      name === "orders" ? value : formatCurrency(value),
-                      name === "orders" ? "Orders" : "Revenue",
-                    ]}
-                  />
-                  <Legend />
-                  <Bar dataKey="orders" fill="#8b5a2b" name="Orders" />
-                  <Bar dataKey="revenue" fill="#d4a574" name="Revenue" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="no-data">{t.noData}</div>
-            )}
-          </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topCrafts}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="orders" fill="#8b5a2b" isAnimationActive={true} animationDuration={1200} />
+                <Bar dataKey="revenue" fill="#d4a574" isAnimationActive={true} animationDuration={1200} />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
 
           {/* Order Distribution */}
-          <div className="chart-card">
+          <motion.div 
+            className="chart-card"
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             <h3>{t.orderDistribution}</h3>
-            {getOrderDistributionData().length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={getOrderDistributionData()}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={90}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {getOrderDistributionData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "white",
-                      border: "1px solid #ddd",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="no-data">{t.noData}</div>
-            )}
-          </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={orderDistribution}
+                  dataKey="value"
+                  outerRadius={90}
+                  label
+                  isAnimationActive={true}
+                  animationDuration={1200}
+                >
+                  {orderDistribution.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
+
         </div>
       </div>
     </div>

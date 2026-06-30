@@ -1,0 +1,215 @@
+/* =========================================
+   PREMIUM PRODUCT CARD STYLES
+   ========================================= */
+
+.product-card {
+  position: relative;
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  border-color: var(--color-border-glow);
+}
+
+/* Image Section */
+.card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card:hover .card-img {
+  transform: scale(1.08);
+}
+
+/* Artisan Bubble */
+.artisan-bubble {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.artisan-bubble img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Wishlist Floating Heart */
+.wishlist-fab {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wishlist-fab:hover {
+  background: white;
+  box-shadow: var(--shadow-md);
+}
+
+.wishlist-fab.active {
+  background: #fdf2f2;
+}
+
+.wishlist-fab svg {
+  transition: stroke 0.3s;
+}
+
+/* Content Section */
+.card-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-dark);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.card-price {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+/* Ratings */
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 8px;
+}
+.card-rating span {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* Location Pin */
+.card-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Actions sliding up on hover */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card:hover .card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Push location and rating up slightly or compress spacer on hover to avoid height change */
+.product-card:hover .card-location {
+  transform: translateY(-4px);
+  opacity: 0.8;
+}
+
+.card-actions .btn {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon-slide {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-icon-slide span {
+  transition: transform 0.3s;
+  display: inline-block;
+}
+
+.btn-icon-slide svg {
+  position: absolute;
+  left: -24px;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.btn-icon-slide:hover span {
+  transform: translateX(10px);
+}
+
+.btn-icon-slide:hover svg {
+  left: 16px;
+  opacity: 1;
+}

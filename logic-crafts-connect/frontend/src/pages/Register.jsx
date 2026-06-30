@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
-
+import "./Auth.css";
 export default function Register() {
   const { language } = useContext(LanguageContext);
   const { register: authRegister } = useAuth();
@@ -79,6 +79,28 @@ export default function Register() {
       return;
     }
     
+    // Basic client-side validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!form.name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+
+    if (!form.location.trim()) {
+      setError('Please enter your location');
+      return;
+    }
+
+    if (form.phone && !/^\+?[0-9\s-]{7,15}$/.test(form.phone)) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+
     try {
       setError("");
       setSuccess("");
@@ -98,7 +120,7 @@ export default function Register() {
       console.log('Full registration data:', registrationData);
       
       const result = await authRegister(registrationData);
-      
+
       if (result.success) {
         setSuccess(result.message || 'Registration successful! Redirecting to login...');
         // AuthContext will handle redirect to login page

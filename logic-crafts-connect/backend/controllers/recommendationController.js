@@ -1,26 +1,23 @@
-import {
-  getPersonalizedRecommendations,
-  getSimilarItems,
-  getTrendingCrafts,
-  getNewArrivals,
-  getTopRated
-} from '../models/recommendationModel.js';
+import Craft from '../models/Craft.js';
+import User from '../models/User.js';
 
 /**
- * Get personalized recommendations
- * GET /api/recommendations/personalized
- * Buyer only
+ * Personalized Recommendations
  */
 export const getPersonalized = async (req, res) => {
   try {
-    const buyer_id = req.user.id;
-    const { limit } = req.query;
-    
-    const recommendations = await getPersonalizedRecommendations(
-      buyer_id,
-      parseInt(limit) || 10
-    );
-    
+    const user = await User.findById(req.user.id);
+
+    const categories = user.recently_viewed?.map(
+      item => item.category
+    ) || [];
+
+    const recommendations = await Craft.find({
+      category: { $in: categories },
+      status: 'approved',
+      visibility: 'public'
+    }).limit(parseInt(req.query.limit) || 10);
+
     res.json({
       success: true,
       message: 'Personalized recommendations based on your activity',
@@ -29,8 +26,10 @@ export const getPersonalized = async (req, res) => {
         count: recommendations.length
       }
     });
+
   } catch (error) {
-    console.error('Get personalized recommendations error:', error);
+    console.error('Get personalized recommendations error:', error.message);
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch recommendations',
@@ -40,17 +39,19 @@ export const getPersonalized = async (req, res) => {
 };
 
 /**
- * Get similar items
- * GET /api/recommendations/similar/:craftId
- * Public
+ * Similar Items
  */
 export const getSimilar = async (req, res) => {
   try {
-    const { craftId } = req.params;
-    const { limit } = req.query;
-    
-    const similar = await getSimilarItems(craftId, parseInt(limit) || 6);
-    
+    const craft = await Craft.findById(req.params.craftId);
+
+    const similar = await Craft.find({
+      category: craft.category,
+      _id: { $ne: craft._id },
+      status: 'approved',
+      visibility: 'public'
+    }).limit(parseInt(req.query.limit) || 6);
+
     res.json({
       success: true,
       message: 'Similar items',
@@ -59,8 +60,10 @@ export const getSimilar = async (req, res) => {
         count: similar.length
       }
     });
+
   } catch (error) {
-    console.error('Get similar items error:', error);
+    console.error('Get similar items error:', error.message);
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch similar items',
@@ -70,15 +73,17 @@ export const getSimilar = async (req, res) => {
 };
 
 /**
- * Get trending crafts
- * GET /api/recommendations/trending
- * Public
+ * Trending Crafts
  */
 export const getTrending = async (req, res) => {
   try {
-    const { limit } = req.query;
-    const trending = await getTrendingCrafts(parseInt(limit) || 10);
-    
+    const trending = await Craft.find({
+      status: 'approved',
+      visibility: 'public'
+    })
+      .sort({ view_count: -1, save_count: -1 })
+      .limit(parseInt(req.query.limit) || 10);
+
     res.json({
       success: true,
       message: 'Trending crafts',
@@ -87,8 +92,10 @@ export const getTrending = async (req, res) => {
         count: trending.length
       }
     });
+
   } catch (error) {
-    console.error('Get trending crafts error:', error);
+    console.error('Get trending crafts error:', error.message);
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch trending crafts',
@@ -98,25 +105,29 @@ export const getTrending = async (req, res) => {
 };
 
 /**
- * Get new arrivals
- * GET /api/recommendations/new-arrivals
- * Public
+ * New Arrivals
  */
 export const getNew = async (req, res) => {
   try {
-    const { limit } = req.query;
-    const newArrivals = await getNewArrivals(parseInt(limit) || 10);
-    
+    const newArrivals = await Craft.find({
+      status: 'approved',
+      visibility: 'public'
+    })
+      .sort({ createdAt: -1 })
+      .limit(parseInt(req.query.limit) || 10);
+
     res.json({
       success: true,
-      message: 'New arrivals in the last 30 days',
+      message: 'New arrivals',
       data: {
         new_arrivals: newArrivals,
         count: newArrivals.length
       }
     });
+
   } catch (error) {
-    console.error('Get new arrivals error:', error);
+    console.error('Get new arrivals error:', error.message);
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch new arrivals',
@@ -126,15 +137,17 @@ export const getNew = async (req, res) => {
 };
 
 /**
- * Get top rated crafts
- * GET /api/recommendations/top-rated
- * Public
+ * Top Rated Crafts
  */
 export const getTopRatedCrafts = async (req, res) => {
   try {
-    const { limit } = req.query;
-    const topRated = await getTopRated(parseInt(limit) || 10);
-    
+    const topRated = await Craft.find({
+      status: 'approved',
+      visibility: 'public'
+    })
+      .sort({ rating: -1 })
+      .limit(parseInt(req.query.limit) || 10);
+
     res.json({
       success: true,
       message: 'Top rated crafts',
@@ -143,8 +156,10 @@ export const getTopRatedCrafts = async (req, res) => {
         count: topRated.length
       }
     });
+
   } catch (error) {
-    console.error('Get top rated crafts error:', error);
+    console.error('Get top rated crafts error:', error.message);
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch top rated crafts',

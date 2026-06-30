@@ -1,46 +1,46 @@
 /**
- * Add review_helpful tracking table
- * This table tracks which users marked which reviews as helpful
+ * Setup review helpful tracking
+ * Tracks which users marked which reviews as helpful
  */
 
-import pool from './db.js';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import Review from '../models/Review.js';
 
-const setupReviewHelpfulTable = async () => {
+dotenv.config();
+
+const setupReviewHelpful = async () => {
   try {
-    console.log('Setting up review_helpful tracking table...');
-    
-    // Create review_helpful tracking table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS review_helpful (
-        id SERIAL PRIMARY KEY,
-        review_id INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(review_id, user_id)
-      )
-    `);
-    
-    console.log('✓ review_helpful table created');
-    
-    // Create index for better performance
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_review_helpful_review_id 
-      ON review_helpful(review_id)
-    `);
-    
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_review_helpful_user_id 
-      ON review_helpful(user_id)
-    `);
-    
-    console.log('✓ Indexes created on review_helpful');
-    
+    console.log('Setting up review helpful tracking...');
+
+    // Connect MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    // Add helpful_by field if missing
+    const result = await Review.updateMany(
+      { helpful_by: { $exists: false } },
+      {
+        $set: {
+          helpful_by: [],
+          helpful_count: 0
+        }
+      }
+    );
+
+    console.log(`✓ Updated ${result.modifiedCount} reviews`);
+
+    // Create index
+    await Review.collection.createIndex({ helpful_count: -1 });
+
+    console.log('✓ Index created on helpful_count');
+
     console.log('✅ Review helpful tracking setup complete!');
     process.exit(0);
+
   } catch (error) {
-    console.error('❌ Error setting up review_helpful table:', error);
+    console.error('❌ Error setting up review helpful:', error.message);
     process.exit(1);
   }
 };
 
-setupReviewHelpfulTable();
+setupReviewHelpful();

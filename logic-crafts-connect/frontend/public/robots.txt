@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /buyer-dashboard
+Disallow: /artisan-dashboard
+Disallow: /admin-dashboard
+Disallow: /cart
+Disallow: /buyer/wishlist
+Disallow: /buyer/orders
+Disallow: /artisan/
+
+Sitemap: http://localhost:3000/sitemap.xml

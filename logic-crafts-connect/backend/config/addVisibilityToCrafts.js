@@ -1,38 +1,34 @@
 /**
- * Add visibility field to crafts table
- * Adds: visibility column with default 'public'
+ * Add visibility field to crafts collection
+ * Adds: visibility field with default 'public'
  */
 
-import pool from './db.js';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import Craft from '../models/Craft.js';
+
+dotenv.config();
 
 const addVisibilityToCrafts = async () => {
   try {
-    console.log('Adding visibility field to crafts table...\n');
+    console.log('Adding visibility field to crafts collection...\n');
 
-    // Add visibility column to crafts table
-    await pool.query(`
-      ALTER TABLE crafts 
-      ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) DEFAULT 'public' CHECK (visibility IN ('public', 'hidden'))
-    `);
-    console.log('✓ Visibility column added to crafts table');
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
 
-    // Update existing crafts to have visibility = 'public' by default
-    await pool.query(`
-      UPDATE crafts 
-      SET visibility = 'public' 
-      WHERE visibility IS NULL
-    `);
-    console.log('✓ Existing crafts set to public visibility');
+    // Add visibility field to all crafts where it does not exist
+    const result = await Craft.updateMany(
+      { visibility: { $exists: false } },
+      { $set: { visibility: 'public' } }
+    );
 
-    // Create index for better performance
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_crafts_visibility ON crafts(visibility);
-    `);
-    console.log('✓ Visibility index created');
+    console.log('✓ Visibility field added to crafts collection');
+    console.log(`✓ ${result.modifiedCount} existing crafts set to public visibility`);
 
     console.log('\n✅ Visibility field added successfully!');
     console.log('Crafts will now have visibility = "public" by default');
     console.log('Artisans can hide crafts by setting visibility = "hidden"');
+
     process.exit(0);
   } catch (error) {
     console.error('❌ Failed to add visibility field:', error.message);

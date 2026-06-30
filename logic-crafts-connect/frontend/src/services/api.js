@@ -1,302 +1,214 @@
 // src/services/api.js
-// Centralized API configuration with Axios
+import axios from "axios";
+import { storage } from "../utils/storage";
 
-import axios from 'axios';
+// Base URL
+const BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Base URL for API - Update this with your backend URL
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-// Create axios instance with default config
+// Axios instance
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
 });
 
-// Request interceptor - Add JWT token to all requests
+// ===============================
+// Request Interceptor
+// ===============================
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = storage.getToken();
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle errors globally
+// ===============================
+// Response Interceptor
+// ===============================
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      storage.clearAll();
+      window.location.href = "/login";
     }
 
-    // Handle 403 Forbidden - Insufficient permissions
     if (error.response?.status === 403) {
-      console.error('Access denied: Insufficient permissions');
+      console.error("Access denied");
     }
 
     return Promise.reject(error);
   }
 );
 
-// ============================================
-// Authentication API Endpoints
-// ============================================
-
+// ===============================
+// AUTH API
+// ===============================
 export const authAPI = {
-  /**
-   * User login
-   * @param {string} email
-   * @param {string} password
-   * @returns {Promise} User data and token
-   */
-  login: async (email, password) => {
+  login: (email, password) =>
+    api.post("/auth/login", { email, password }),
+
+  register: (userData) =>
+    api.post("/auth/register", userData),
+
+  logout: async () => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Login failed' };
+      await api.post("/auth/logout");
+    } finally {
+      storage.clearAll();
     }
   },
 
-  /**
-   * User registration
-   * @param {Object} userData - User registration data
-   * @returns {Promise} User data and token
-   */
-  register: async (userData) => {
-    try {
-      const response = await api.post('/auth/register', userData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Registration failed' };
-    }
-  },
+  verifyToken: () =>
+    api.get("/auth/verify"),
 
-  /**
-   * Logout (optional backend call to invalidate token)
-   */
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  },
-
-  /**
-   * Verify token validity
-   * @returns {Promise} Token validity status
-   */
-  verifyToken: async () => {
-    try {
-      const response = await api.get('/auth/verify');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Token verification failed' };
-    }
-  },
-
-  /**
-   * Get current user profile
-   * @returns {Promise} User profile data
-   */
-  getProfile: async () => {
-    try {
-      const response = await api.get('/auth/profile');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch profile' };
-    }
-  },
+  getProfile: () =>
+    api.get("/auth/profile"),
 };
 
-// ============================================
-// Craft API Endpoints
-// ============================================
-
+// ===============================
+// CRAFT API
+// ===============================
 export const craftAPI = {
-  getAll: async (filters = {}) => {
-    try {
-      const response = await api.get('/crafts', { params: filters });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch crafts' };
-    }
-  },
+  getAll: (filters = {}) =>
+    api.get("/crafts", { params: filters }),
 
-  getById: async (id) => {
-    try {
-      const response = await api.get(`/crafts/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch craft' };
-    }
-  },
+  getById: (id) =>
+    api.get(`/crafts/${id}`),
 
-  create: async (craftData) => {
-    try {
-      const response = await api.post('/crafts', craftData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to create craft' };
-    }
-  },
+  create: (craftData) =>
+    api.post("/crafts", craftData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
 
-  update: async (id, craftData) => {
-    try {
-      const response = await api.put(`/crafts/${id}`, craftData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to update craft' };
-    }
-  },
+  update: (id, craftData) =>
+    api.put(`/crafts/${id}`, craftData),
 
-  delete: async (id) => {
-    try {
-      const response = await api.delete(`/crafts/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to delete craft' };
-    }
-  },
+  delete: (id) =>
+    api.delete(`/crafts/${id}`),
 
-  getMyCrafts: async () => {
-    try {
-      const response = await api.get('/crafts/my-crafts');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch your crafts' };
-    }
-  },
+  getMyCrafts: () =>
+    api.get("/crafts/my-crafts"),
 };
 
-// ============================================
-// Admin API Endpoints
-// ============================================
+// ===============================
+// CART API
+// ===============================
+export const cartAPI = {
+  getCart: () =>
+    api.get("/cart"),
 
+  addToCart: (data) =>
+    api.post("/cart", data),
+
+  updateCart: (id, data) =>
+    api.put(`/cart/${id}`, data),
+
+  removeItem: (id) =>
+    api.delete(`/cart/${id}`),
+
+  clearCart: () =>
+    api.delete("/cart/clear"),
+};
+
+// ===============================
+// WISHLIST API
+// ===============================
+export const wishlistAPI = {
+  getWishlist: () =>
+    api.get("/wishlist"),
+
+  addToWishlist: (craftId) =>
+    api.post("/wishlist", {
+      craft_id: craftId,
+    }),
+
+  removeFromWishlist: (craftId) =>
+    api.delete(`/wishlist/${craftId}`),
+
+  moveToCart: (craftIds) =>
+    api.post("/wishlist/move-to-cart", {
+      craft_ids: craftIds,
+    }),
+
+  clearWishlist: () =>
+    api.delete("/wishlist/clear"),
+};
+
+// ===============================
+// ORDER API
+// ===============================
+export const orderAPI = {
+  getOrders: () =>
+    api.get("/orders"),
+
+  getOrderById: (id) =>
+    api.get(`/orders/${id}`),
+
+  createOrder: (data) =>
+    api.post("/orders", data),
+
+  cancelOrder: (id) =>
+    api.put(`/orders/${id}/cancel`),
+};
+
+// ===============================
+// ADMIN API
+// ===============================
 export const adminAPI = {
-  getPendingCrafts: async () => {
-    try {
-      const response = await api.get('/admin/crafts/pending');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch pending crafts' };
-    }
-  },
+  getPendingCrafts: () =>
+    api.get("/admin/crafts/pending"),
 
-  approveCraft: async (id) => {
-    try {
-      const response = await api.put(`/admin/crafts/${id}/approve`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to approve craft' };
-    }
-  },
+  approveCraft: (id) =>
+    api.put(`/admin/crafts/${id}/approve`),
 
-  rejectCraft: async (id) => {
-    try {
-      const response = await api.put(`/admin/crafts/${id}/reject`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to reject craft' };
-    }
-  },
+  rejectCraft: (id) =>
+    api.put(`/admin/crafts/${id}/reject`),
 
-  getStats: async () => {
-    try {
-      const response = await api.get('/admin/stats');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch stats' };
-    }
-  },
+  getStats: () =>
+    api.get("/admin/stats"),
 
-  getEvents: async () => {
-    try {
-      const response = await api.get('/admin/events');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch events' };
-    }
-  },
+  getEvents: () =>
+    api.get("/admin/events"),
 
-  createEvent: async (eventData) => {
-    try {
-      const response = await api.post('/admin/events', eventData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to create event' };
-    }
-  },
+  createEvent: (eventData) =>
+    api.post("/admin/events", eventData),
 
-  getAllUsers: async () => {
-    try {
-      const response = await api.get('/admin/users');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch users' };
-    }
-  },
+  getAllUsers: () =>
+    api.get("/admin/users"),
 };
 
-// ============================================
-// User API Endpoints
-// ============================================
-
+// ===============================
+// USER API
+// ===============================
 export const userAPI = {
-  getProfile: async (id) => {
-    try {
-      const response = await api.get(`/users/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch profile' };
-    }
-  },
+  getProfile: (id) =>
+    api.get(`/users/${id}`),
 
-  updateProfile: async (id, userData) => {
-    try {
-      const response = await api.put(`/users/${id}`, userData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to update profile' };
-    }
-  },
+  updateProfile: (id, userData) =>
+    api.put(`/users/${id}`, userData),
 };
 
-// ============================================
-// Reviews API Endpoints
-// ============================================
-
+// ===============================
+// REVIEW API
+// ===============================
 export const reviewAPI = {
-  getForCraft: async (craftId) => {
-    try {
-      const response = await api.get(`/reviews/craft/${craftId}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch reviews' };
-    }
-  },
+  getForCraft: (craftId) =>
+    api.get(`/reviews/craft/${craftId}`),
 
-  create: async (reviewData) => {
-    try {
-      const response = await api.post('/reviews', reviewData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to create review' };
-    }
-  },
+  create: (reviewData) =>
+    api.post("/reviews", reviewData),
 };
 
 export default api;

@@ -1,42 +1,15 @@
-/**
- * ============================================
- * ORDER CONTROLLER
- * ============================================
- * Handles order-related HTTP requests
- * - Place orders
- * - Get orders
- * - Update status
- * - Track orders
- * - Cancel/Return
- */
-
-import {
-  createOrder,
-  getOrdersByBuyer,
-  getOrdersByArtisan,
-  getOrderById,
-  updateOrderStatus,
-  cancelOrder,
-  returnOrder,
-  updateTracking,
-  getBuyerOrderStats,
-  getRecentOrders,
-  getArtisanOrderStats,
-  getArtisanRevenue,
-  rejectOrder
-} from '../models/orderModel.js';
-import { clearCart } from '../models/cartModel.js';
+import Order from '../models/Order.js';
+import User from '../models/User.js';
+import Analytics from '../models/Analytics.js';
 
 /**
- * @desc    Place a new order
- * @route   POST /api/orders
- * @access  Private (Buyer only)
+ * Place Order
  */
 export const placeOrder = async (req, res) => {
   try {
     const {
       artisan_id,
-      items, // [{craft_id, quantity, price}]
+      items,
       total_amount,
       shipping_address,
       buyer_phone,
@@ -44,9 +17,6 @@ export const placeOrder = async (req, res) => {
       notes
     } = req.body;
 
-    const buyer_id = req.user.id;
-
-    // Validation
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -54,28 +24,44 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    if (!shipping_address || !buyer_phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'Shipping address and phone number are required'
-      });
-    }
-
-    // Create order
-    const order = await createOrder({
-      buyer_id,
+    const order = await Order.create({
+      buyer_id: req.user.id,
       artisan_id,
       items,
       total_amount,
       shipping_address,
       buyer_phone,
       payment_method: payment_method || 'COD',
-      notes
+      notes,
+      status: 'pending'
     });
 
-    // Clear cart after successful order
+    // Track checkout_success analytics
+    try {
+      await Analytics.create({
+        eventType: 'checkout_success',
+        userId: req.user.id,
+        sessionId: req.body.sessionId || 'system-placed-order',
+        payload: {
+          orderId: order._id,
+          totalAmount: total_amount,
+          itemsCount: items.length
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to log order analytics:", err);
+    }
+
     if (req.body.clear_cart) {
-      await clearCart(buyer_id);
+      await User.findByIdAndUpdate(req.user.id, {
+        $set: { cart: [] }
+      });
+    }
+
+    // Emit real-time event to artisan
+    const io = req.app.get('io');
+    if (io) {
+      io.to(artisan_id.toString()).emit('newOrder', order);
     }
 
     res.status(201).json({
@@ -83,39 +69,23 @@ export const placeOrder = async (req, res) => {
       message: 'Order placed successfully',
       data: { order }
     });
+
   } catch (error) {
-    console.error('Place order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error placing order',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * @desc    Get orders for logged-in user
- * @route   GET /api/orders
- * @access  Private
+ * Get My Orders
  */
 export const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { status, from_date, to_date } = req.query;
-
-    const filters = { status, from_date, to_date };
-
     let orders;
-    if (userRole === 'buyer') {
-      orders = await getOrdersByBuyer(userId, filters);
-    } else if (userRole === 'artisan') {
-      orders = await getOrdersByArtisan(userId, filters);
+
+    if (req.user.role === 'buyer') {
+      orders = await Order.find({ buyer_id: req.user.id });
     } else {
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid user role for this operation'
-      });
+      orders = await Order.find({ artisan_id: req.user.id });
     }
 
     res.status(200).json({
@@ -123,190 +93,18 @@ export const getMyOrders = async (req, res) => {
       count: orders.length,
       data: { orders }
     });
+
   } catch (error) {
-    console.error('Get orders error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching orders',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * @desc    Get single order by ID
- * @route   GET /api/orders/:id
- * @access  Private
+ * Get Single Order
  */
 export const getOrder = async (req, res) => {
   try {
-    const orderId = req.params.id;
-    const userId = req.user.id;
-
-    const order = await getOrderById(orderId, userId);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found or access denied'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: { order }
-    });
-  } catch (error) {
-    console.error('Get order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching order',
-      error: error.message
-    });
-  }
-};
-
-/**
- * @desc    Update order status (Artisan only)
- * @route   PUT /api/orders/:id/status
- * @access  Private (Artisan only)
- */
-export const updateStatus = async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const userId = req.user.id;
-    const { status } = req.body;
-
-    const validStatuses = ['confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
-      });
-    }
-
-    const order = await updateOrderStatus(orderId, status, userId);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found or you are not authorized to update this order'
-      });
-    }
-
-    // TODO: Send notification to buyer about status change
-
-    res.status(200).json({
-      success: true,
-      message: 'Order status updated successfully',
-      data: { order }
-    });
-  } catch (error) {
-    console.error('Update status error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating order status',
-      error: error.message
-    });
-  }
-};
-
-/**
- * @desc    Cancel order (Buyer only)
- * @route   PUT /api/orders/:id/cancel
- * @access  Private (Buyer only)
- */
-export const cancelOrderRequest = async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const buyerId = req.user.id;
-    const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cancellation reason is required'
-      });
-    }
-
-    const order = await cancelOrder(orderId, buyerId, reason);
-
-    if (!order) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order cannot be cancelled (not found, already processed, or not your order)'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Order cancelled successfully',
-      data: { order }
-    });
-  } catch (error) {
-    console.error('Cancel order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error cancelling order',
-      error: error.message
-    });
-  }
-};
-
-/**
- * @desc    Request order return (Buyer only)
- * @route   PUT /api/orders/:id/return
- * @access  Private (Buyer only)
- */
-export const returnOrderRequest = async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const buyerId = req.user.id;
-    const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Return reason is required'
-      });
-    }
-
-    const order = await returnOrder(orderId, buyerId, reason);
-
-    if (!order) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order cannot be returned (not delivered or not your order)'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Return request submitted successfully',
-      data: { order }
-    });
-  } catch (error) {
-    console.error('Return order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error processing return request',
-      error: error.message
-    });
-  }
-};
-
-/**
- * @desc    Update tracking information (Artisan only)
- * @route   PUT /api/orders/:id/tracking
- * @access  Private (Artisan only)
- */
-export const updateOrderTracking = async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const { tracking_number, estimated_delivery } = req.body;
-
-    const order = await updateTracking(orderId, tracking_number, estimated_delivery);
+    const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({
@@ -317,161 +115,299 @@ export const updateOrderTracking = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      data: { order }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Update Status
+ */
+export const updateStatus = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        artisan_id: req.user.id
+      },
+      {
+        status: req.body.status
+      },
+      { new: true }
+    );
+
+    // Emit real-time event to buyer
+    const io = req.app.get('io');
+    if (io && order) {
+      io.to(order.buyer_id.toString()).emit('orderStatusUpdated', order);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: { order }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Cancel Order
+ */
+export const cancelOrderRequest = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        buyer_id: req.user.id
+      },
+      {
+        status: 'cancelled',
+        cancel_reason: req.body.reason
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: { order }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Return Order
+ */
+export const returnOrderRequest = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        buyer_id: req.user.id
+      },
+      {
+        return_requested: true,
+        return_reason: req.body.reason
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Return request submitted successfully',
+      data: { order }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Update Tracking
+ */
+export const updateOrderTracking = async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        tracking_number: req.body.tracking_number,
+        estimated_delivery: req.body.estimated_delivery
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
       message: 'Tracking information updated',
       data: { order }
     });
+
   } catch (error) {
-    console.error('Update tracking error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating tracking information',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * @desc    Get order statistics for buyer
- * @route   GET /api/orders/stats
- * @access  Private (Buyer only)
+ * Order Stats
  */
 export const getOrderStats = async (req, res) => {
   try {
-    const buyerId = req.user.id;
-    const stats = await getBuyerOrderStats(buyerId);
+    const total = await Order.countDocuments({
+      buyer_id: req.user.id
+    });
+
+    const delivered = await Order.countDocuments({
+      buyer_id: req.user.id,
+      status: 'delivered'
+    });
 
     res.status(200).json({
       success: true,
-      data: { stats }
+      data: {
+        stats: {
+          total,
+          delivered
+        }
+      }
     });
+
   } catch (error) {
-    console.error('Get order stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching order statistics',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /**
- * @desc    Get recent orders
- * @route   GET /api/orders/recent
- * @access  Private
- */
-export const getRecentOrdersList = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const limit = parseInt(req.query.limit) || 5;
-
-    const orders = await getRecentOrders(userId, limit);
-
-    res.status(200).json({
-      success: true,
-      count: orders.length,
-      data: { orders }
-    });
-  } catch (error) {
-    console.error('Get recent orders error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching recent orders',
-      error: error.message
-    });
-  }
-};
-
-/**
- * @desc    Get artisan order statistics
- * @route   GET /api/orders/artisan/stats
- * @access  Private (Artisan only)
+ * ============================================
+ * GET ARTISAN STATS
+ * ============================================
  */
 export const getArtisanStats = async (req, res) => {
   try {
     const artisanId = req.user.id;
-    const stats = await getArtisanOrderStats(artisanId);
+
+    const totalOrders = await Order.countDocuments({
+      artisan_id: artisanId
+    });
+
+    const pendingOrders = await Order.countDocuments({
+      artisan_id: artisanId,
+      status: 'pending'
+    });
+
+    const completedOrders = await Order.countDocuments({
+      artisan_id: artisanId,
+      status: 'delivered'
+    });
 
     res.status(200).json({
       success: true,
-      data: { stats }
+      data: {
+        totalOrders,
+        pendingOrders,
+        completedOrders
+      }
     });
+
   } catch (error) {
-    console.error('Get artisan stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching artisan statistics',
-      error: error.message
+      message: error.message
     });
   }
 };
 
 /**
- * @desc    Get artisan revenue data
- * @route   GET /api/orders/artisan/revenue
- * @access  Private (Artisan only)
+ * ============================================
+ * GET ARTISAN REVENUE DATA
+ * ============================================
  */
 export const getArtisanRevenueData = async (req, res) => {
   try {
     const artisanId = req.user.id;
-    const period = req.query.period || 'monthly';
 
-    const revenue = await getArtisanRevenue(artisanId, period);
+    const revenue = await Order.aggregate([
+      {
+        $match: {
+          artisan_id: artisanId,
+          status: 'delivered'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$total_amount' }
+        }
+      }
+    ]);
 
     res.status(200).json({
       success: true,
-      count: revenue.length,
-      data: { revenue }
+      data: {
+        totalRevenue: revenue[0]?.totalRevenue || 0
+      }
     });
+
   } catch (error) {
-    console.error('Get revenue data error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching revenue data',
-      error: error.message
+      message: error.message
     });
   }
 };
 
 /**
- * @desc    Reject order (Artisan only)
- * @route   PUT /api/orders/:id/reject
- * @access  Private (Artisan only)
+ * ============================================
+ * REJECT ORDER
+ * ============================================
  */
 export const rejectOrderRequest = async (req, res) => {
   try {
-    const orderId = req.params.id;
-    const artisanId = req.user.id;
-    const { reason } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status: 'rejected' },
+      { new: true }
+    );
 
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rejection reason is required'
-      });
+    // Emit real-time event to buyer
+    const io = req.app.get('io');
+    if (io && order) {
+      io.to(order.buyer_id.toString()).emit('orderStatusUpdated', order);
     }
-
-    const order = await rejectOrder(orderId, artisanId, reason);
-
-    if (!order) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order cannot be rejected (not found, already processed, or not your order)'
-      });
-    }
-
-    // TODO: Send notification to buyer
 
     res.status(200).json({
       success: true,
       message: 'Order rejected successfully',
       data: { order }
     });
+
   } catch (error) {
-    console.error('Reject order error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error rejecting order',
-      error: error.message
+      message: error.message
+    });
+  }
+};
+/**
+ * ============================================
+ * GET RECENT ORDERS
+ * ============================================
+ * Returns latest 5 orders for logged-in user
+ * Buyer -> orders placed
+ * Artisan -> orders received
+ */
+export const getRecentOrdersList = async (req, res) => {
+  try {
+    let orders;
+
+    if (req.user.role === 'buyer') {
+      orders = await Order.find({ buyer_id: req.user.id })
+        .sort({ createdAt: -1 })
+        .limit(5);
+    } else if (req.user.role === 'artisan') {
+      orders = await Order.find({ artisan_id: req.user.id })
+        .sort({ createdAt: -1 })
+        .limit(5);
+    }
+
+    res.status(200).json({
+      success: true,
+      count: orders.length,
+      data: { orders }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };

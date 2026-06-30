@@ -1,15 +1,324 @@
 /* Minimal CSS reset / defaults */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html,body,#root { height: 100%; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================
+   CRAFTHUB PREMIUM DESIGN SYSTEM
+   ========================================= */
+
+:root {
+  /* Colors - Rich Heritage terracotta palette */
+  --color-primary: #D4A373;
+  --color-primary-rgb: 212, 163, 115;
+  --color-secondary: #B5651D;
+  --color-secondary-rgb: 181, 101, 29;
+  --color-accent: #7F1D1D;
+  --color-accent-rgb: 127, 29, 29;
+  
+  --color-bg: #FAF7F2;
+  --color-bg-secondary: #F3EDE5;
+  --color-dark: #111827;
+  --color-dark-rgb: 17, 24, 39;
+  --color-text-muted: #6B7280;
+  
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-glow: rgba(212, 163, 115, 0.4);
+  
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #D4A373, #B5651D);
+  --gradient-luxury: linear-gradient(135deg, #FAF7F2, #EFE6D8);
+  --gradient-mesh: radial-gradient(at 0% 0%, rgba(212, 163, 115, 0.15) 0px, transparent 50%),
+                   radial-gradient(at 100% 0%, rgba(181, 101, 29, 0.12) 0px, transparent 50%),
+                   radial-gradient(at 50% 100%, rgba(127, 29, 29, 0.05) 0px, transparent 50%);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 20px rgba(17, 24, 39, 0.05);
+  --shadow-lg: 0 16px 36px rgba(17, 24, 39, 0.08);
+  --shadow-xl: 0 24px 48px rgba(17, 24, 39, 0.12);
+  --premium-shadow: 0 12px 40px -10px rgba(212, 163, 115, 0.25);
+  --glow-shadow: 0 0 25px rgba(212, 163, 115, 0.45);
+
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+
+  /* Spacing Base */
+  --spacing-base: 8px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: #ffffff;
-  color: #222;
+  font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  background-image: var(--gradient-mesh), radial-gradient(circle at top right, var(--color-bg-secondary), var(--color-bg));
+  background-attachment: fixed;
+  color: var(--color-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.45;
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; }
-img { max-width: 100%; display: block; }
-.container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
+
+/* Text Selection */
+::selection {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* =========================================
+   UTILITY & PREMIUM VISUAL CLASSES
+   ========================================= */
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 calc(var(--spacing-base) * 4);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 calc(var(--spacing-base) * 2);
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-premium {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Text & Visual accents */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hover-lift {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--premium-shadow);
+}
+
+.section-spacing {
+  padding: calc(var(--spacing-base) * 12) 0;
+}
+@media (max-width: 768px) {
+  .section-spacing {
+    padding: calc(var(--spacing-base) * 8) 0;
+  }
+}
+
+/* =========================================
+   TYPOGRAPHY UTILITIES (Responsive)
+   ========================================= */
+.text-hero {
+  font-size: clamp(38px, 6vw, 68px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.text-section-title {
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.text-card-title {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.text-body {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.text-small {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* =========================================
+   GLOBAL ANIMATIONS & SHADOWS
+   ========================================= */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.fade-left { animation: fadeLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.fade-right { animation: fadeRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.scale-in { animation: scaleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes blurReveal {
+  from { opacity: 0; filter: blur(15px); }
+  to { opacity: 1; filter: blur(0); }
+}
+.blur-reveal { animation: blurReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Custom Animations */
+@keyframes blob-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+.animated-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  animation: blob-float 12s ease-in-out infinite;
+}
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-container {
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee-content {
+  display: inline-flex;
+  animation: marquee-scroll 25s linear infinite;
+}
+
+/* Shimmer Effect for Loading Skeletons */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f3ede5 25%, #e8dec8 50%, #f3ede5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Verified Badge Pulse Glow */
+@keyframes badge-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(212, 163, 115, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(212, 163, 115, 0.6); }
+}
+.badge-pulse {
+  animation: badge-glow 2s infinite ease-in-out;
+}
+
+/* Shake Animation (Form Validation) */
+@keyframes validation-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.shake {
+  animation: validation-shake 0.4s ease-in-out;
+}
+
+/* Checkmark Success Path Animation */
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+.checkmark-path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-check 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Button Ripple & Magnetic Support */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
