@@ -100,6 +100,9 @@ export const craftAPI = {
 
   getMyCrafts: () =>
     api.get("/crafts/my-crafts"),
+
+  getArtisanStats: () =>
+    api.get("/crafts/artisan/stats"),
 };
 
 // ===============================
@@ -144,6 +147,9 @@ export const wishlistAPI = {
 
   clearWishlist: () =>
     api.delete("/wishlist/clear"),
+
+  getCount: () =>
+    api.get("/wishlist/count"),
 };
 
 // ===============================

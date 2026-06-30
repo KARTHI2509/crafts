@@ -5,6 +5,7 @@ import { AuthContext } from "../context/AuthContext";
 import ProductCard from "../components/ProductCard";
 import { motion } from "framer-motion";
 import { LayoutDashboard, Package, ShoppingCart, MessageSquare, LineChart, PlusCircle, LogOut, CheckCircle, Clock, XCircle, Eye, Heart } from "lucide-react";
+import { craftAPI } from "../services/api";
 import "./ArtisanDashboard.css";
 
 function AnimatedNumber({ value }) {
@@ -43,6 +44,7 @@ export default function ArtisanDashboard() {
 
   const [myCrafts, setMyCrafts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [stats, setStats] = useState({
     totalCrafts: 0,
@@ -59,14 +61,59 @@ export default function ArtisanDashboard() {
   const t = content[language] || content.en;
 
   useEffect(() => {
-    // Mock Data
-    const mockCrafts = [
-      { id: 1, name: "Traditional Clay Pot", craftType: "Pottery", price: "500", location: "Jaipur", imageUrl: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400", status: "approved", views: 145, likes: 23 },
-      { id: 2, name: "Wooden Jewelry Box", craftType: "Woodwork", price: "800", location: "Kerala", imageUrl: "https://images.unsplash.com/photo-1615397349754-5e6d2e18b0b8?w=400", status: "pending", views: 12, likes: 2 },
-      { id: 3, name: "Silk Embroidered Scarf", craftType: "Textiles", price: "1200", location: "Bangalore", imageUrl: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400", status: "approved", views: 289, likes: 45 },
-    ];
+    if (user?.role === "artisan") {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
-    setTimeout(() => {
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authorization token found");
+
+      const [craftsRes, statsRes] = await Promise.all([
+        craftAPI.getMyCrafts(),
+        craftAPI.getArtisanStats()
+      ]);
+
+      if (craftsRes.data.success) {
+        const formattedCrafts = craftsRes.data.data.crafts.map(c => ({
+          id: c._id || c.id,
+          name: c.name,
+          craftType: c.craft_type || c.category || "Handmade",
+          price: c.price,
+          location: c.location || user.location || "India",
+          imageUrl: c.image_url || c.images?.[0] || "https://via.placeholder.com/400x300",
+          status: c.status || "approved",
+          views: c.view_count || 0,
+          likes: c.save_count || 0
+        }));
+        setMyCrafts(formattedCrafts);
+      }
+
+      if (statsRes.data.success) {
+        const backendStats = statsRes.data.data;
+        setStats({
+          totalCrafts: backendStats.totalCrafts || 0,
+          totalViews: backendStats.totalViews || 0,
+          totalLikes: 0,
+          pending: backendStats.pendingCrafts || 0,
+          approved: backendStats.approvedCrafts || 0,
+        });
+      }
+      setError("");
+    } catch (err) {
+      console.warn("Dashboard sync failed, using offline fallback:", err);
+      setError("Viewing in Offline Mode. Live stats synchronisation failed.");
+
+      const mockCrafts = [
+        { id: 1, name: "Traditional Clay Pot", craftType: "Pottery", price: "500", location: "Jaipur", imageUrl: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400", status: "approved", views: 145, likes: 23 },
+        { id: 2, name: "Wooden Jewelry Box", craftType: "Woodwork", price: "800", location: "Kerala", imageUrl: "https://images.unsplash.com/photo-1615397349754-5e6d2e18b0b8?w=400", status: "pending", views: 12, likes: 2 },
+        { id: 3, name: "Silk Embroidered Scarf", craftType: "Textiles", price: "1200", location: "Bangalore", imageUrl: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400", status: "approved", views: 289, likes: 45 },
+      ];
       setMyCrafts(mockCrafts);
       setStats({
         totalCrafts: mockCrafts.length,
@@ -75,9 +122,10 @@ export default function ArtisanDashboard() {
         pending: mockCrafts.filter((item) => item.status === "pending").length,
         approved: mockCrafts.filter((item) => item.status === "approved").length,
       });
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
+    }
+  };
 
   const handleDelete = (id) => {
     if (!window.confirm("Are you sure you want to delete this craft?")) return;
@@ -135,6 +183,12 @@ export default function ArtisanDashboard() {
 
       {/* MAIN CONTENT */}
       <main className="dashboard-main">
+
+        {error && (
+          <div className="offline-warning-banner">
+            <span className="warning-icon">⚠️</span> {error}
+          </div>
+        )}
         
         <div className="dashboard-header">
           <div>

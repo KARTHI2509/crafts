@@ -14,7 +14,10 @@ export const SocketProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     
     if (token) {
-      const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const socketUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+      
+      const newSocket = io(socketUrl, {
         auth: {
           token
         }

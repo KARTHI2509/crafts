@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
-import axios from "axios";
+import { cartAPI, wishlistAPI } from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ShoppingCart, Heart, Menu, X, User, Home, Compass } from "lucide-react";
 import "./Navbar.css";
@@ -29,10 +29,7 @@ export default function Navbar({ user, logout }) {
 
   const fetchCartCount = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/cart", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await cartAPI.getCart();
       setCartCount(res?.data?.data?.summary?.item_count || 0);
     } catch (error) {
       console.error("Cart error:", error);
@@ -41,10 +38,7 @@ export default function Navbar({ user, logout }) {
 
   const fetchWishlistCount = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/wishlist/count", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await wishlistAPI.getCount();
       setWishlistCount(res?.data?.data?.count || 0);
     } catch (error) {
       console.error("Wishlist error:", error);
