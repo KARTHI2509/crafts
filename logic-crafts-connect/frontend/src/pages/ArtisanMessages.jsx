@@ -1,45 +1,34 @@
 import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
-
+import { useNavigate } from "react-router-dom";
+import { messageAPI } from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
-import { useSocket } from "../context/SocketContext";
 import "./ArtisanMessages.css";
 
 export default function ArtisanMessages() {
   const { user } = useContext(AuthContext);
   const { language } = useContext(LanguageContext);
-  const socket = useSocket();
+  const navigate = useNavigate();
 
-  // ----------------------------
-  // State Management
-  // ----------------------------
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [stats, setStats] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [stats, setStats] = useState(null);
 
-  const token = localStorage.getItem("token");
-  const headers = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  // ----------------------------
-  // Language Content
-  // ----------------------------
   const content = {
     en: {
       title: "Messages",
       subtitle: "Communicate with buyers and manage inquiries",
       conversations: "Conversations",
       noConversations: "No conversations yet",
+      searchPlaceholder: "Search conversations...",
       typeMessage: "Type your message...",
       send: "Send",
       you: "You",
+      unread: "unread",
       selectConversation: "Select a conversation to start messaging",
       stats: {
         total: "Total Conversations",
@@ -48,165 +37,97 @@ export default function ArtisanMessages() {
         received: "Messages Received",
       },
     },
+    te: {
+      title: "సందేశాలు",
+      subtitle: "కొనుగోలుదారులతో కమ్యూనికేట్ చేయండి మరియు విచారణలను నిర్వహించండి",
+      conversations: "సంభాషణలు",
+      noConversations: "ఇంకా సంభాషణలు లేవు",
+      searchPlaceholder: "సంభాషణలను శోధించండి...",
+      typeMessage: "మీ సందేశాన్ని టైప్ చేయండి...",
+      send: "పంపు",
+      you: "మీరు",
+      unread: "చదవనివి",
+    },
   };
 
   const t = content[language] || content.en;
 
-  // ----------------------------
-  // Initial Data Load
-  // ----------------------------
   useEffect(() => {
-    if (!user) return;
-
-    loadInitialData();
-  }, [user]);
-
-  // Load messages when conversation changes
-  useEffect(() => {
-    if (!selectedConversation) return;
-
-    fetchMessages(selectedConversation.other_user_id);
-    markAsRead(selectedConversation.other_user_id);
-  }, [selectedConversation]);
-
-  // Handle incoming real-time messages
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewMessage = (message) => {
-      // If the message is part of the currently active conversation, append it
-      if (selectedConversation && (message.sender_id === selectedConversation.other_user_id)) {
-        setMessages((prev) => [...prev, message]);
-        markAsRead(selectedConversation.other_user_id);
-      }
-      
-      // Update the conversations list and stats
+    if (user) {
       fetchConversations();
       fetchStats();
-    };
+    }
+  }, [user]);
 
-    socket.on('newMessage', handleNewMessage);
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.other_user_id);
+      markAsRead(selectedConversation.other_user_id);
+    }
+  }, [selectedConversation]);
 
-    return () => {
-      socket.off('newMessage', handleNewMessage);
-    };
-  }, [socket, selectedConversation]);
-
-  // Load all startup data
-  const loadInitialData = async () => {
+  const fetchConversations = async () => {
     try {
-      setLoading(true);
-      await Promise.all([
-        fetchConversations(),
-        fetchStats(),
-      ]);
+      const response = await messageAPI.getInbox();
+
+      if (response.success) {
+        setConversations(response.data?.conversations || []);
+      }
+    } catch (error) {
+      console.error("Fetch conversations error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ----------------------------
-  // Fetch Conversations
-  // ----------------------------
-  const fetchConversations = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5000/api/messages/inbox",
-        { headers }
-      );
-
-      if (response.data.success) {
-        setConversations(
-          response.data.data.conversations
-        );
-      }
-    } catch (error) {
-      console.error("Fetch conversations error:", error);
-    }
-  };
-
-  // ----------------------------
-  // Fetch Statistics
-  // ----------------------------
   const fetchStats = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/api/messages/stats",
-        { headers }
-      );
+      const response = await messageAPI.getStats();
 
-      if (response.data.success) {
-        setStats(response.data.data.stats);
+      if (response.success) {
+        setStats(response.data?.stats);
       }
     } catch (error) {
       console.error("Fetch stats error:", error);
     }
   };
 
-  // ----------------------------
-  // Fetch Messages
-  // ----------------------------
   const fetchMessages = async (otherUserId) => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/messages/conversation/${otherUserId}`,
-        { headers }
-      );
+      const response = await messageAPI.getConversation(otherUserId);
 
-      if (response.data.success) {
-        setMessages(response.data.data.messages);
+      if (response.success) {
+        setMessages(response.data?.messages || []);
       }
     } catch (error) {
       console.error("Fetch messages error:", error);
     }
   };
 
-  // ----------------------------
-  // Mark Conversation as Read
-  // ----------------------------
   const markAsRead = async (senderId) => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/messages/mark-read/${senderId}`,
-        {},
-        { headers }
-      );
-
-      fetchConversations();
+      await messageAPI.markAsRead(senderId);
+      fetchConversations(); // Refresh to update unread count
     } catch (error) {
-      console.error("Mark read error:", error);
+      console.error("Mark as read error:", error);
     }
   };
 
-  // ----------------------------
-  // Send Message
-  // ----------------------------
   const handleSendMessage = async (e) => {
     e.preventDefault();
-
     if (!newMessage.trim() || !selectedConversation) return;
 
+    setSending(true);
     try {
-      setSending(true);
+      const response = await messageAPI.send({
+        receiver_id: selectedConversation.other_user_id,
+        message_text: newMessage,
+        craft_id: selectedConversation.craft_id,
+      });
 
-      const response = await axios.post(
-        "http://localhost:5000/api/messages",
-        {
-          receiver_id:
-            selectedConversation.other_user_id,
-          message_text: newMessage,
-          craft_id: selectedConversation.craft_id,
-        },
-        { headers }
-      );
-
-      if (response.data.success) {
+      if (response.success) {
         setNewMessage("");
-
-        await fetchMessages(
-          selectedConversation.other_user_id
-        );
-
+        fetchMessages(selectedConversation.other_user_id);
         fetchConversations();
       }
     } catch (error) {
@@ -217,44 +138,29 @@ export default function ArtisanMessages() {
     }
   };
 
-  // ----------------------------
-  // Format Time
-  // ----------------------------
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
-
     const diff = now - date;
-    const hours = Math.floor(
-      diff / (1000 * 60 * 60)
-    );
+    const hours = Math.floor(diff / (1000 * 60 * 60));
 
     if (hours < 1) {
-      const minutes = Math.floor(
-        diff / (1000 * 60)
-      );
+      const minutes = Math.floor(diff / (1000 * 60));
       return `${minutes}m ago`;
-    }
-
-    if (hours < 24) {
+    } else if (hours < 24) {
       return `${hours}h ago`;
+    } else {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
     }
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
   };
 
-  // ----------------------------
-  // Loading UI
-  // ----------------------------
   if (loading) {
     return (
       <div className="container">
-        <div className="loading">
-          Loading messages...
-        </div>
+        <div className="loading">Loading messages...</div>
       </div>
     );
   }
@@ -262,43 +168,51 @@ export default function ArtisanMessages() {
   return (
     <div className="artisan-messages-page">
       <div className="container">
-
         {/* Header */}
         <div className="page-header">
-          <h2>{t.title}</h2>
-          <p>{t.subtitle}</p>
+          <div>
+            <h2>{t.title}</h2>
+            <p>{t.subtitle}</p>
+          </div>
         </div>
 
-        {/* Stats */}
+        {/* Statistics */}
         {stats && (
           <div className="message-stats">
-            {[
-              ["💬", stats.conversation_count, t.stats.total],
-              ["📩", stats.unread_count, t.stats.unread],
-              ["📤", stats.sent_count, t.stats.sent],
-              ["📥", stats.received_count, t.stats.received],
-            ].map(([icon, value, label], index) => (
-              <div key={index} className="stat-card">
-                <div className="stat-icon">{icon}</div>
-
-                <div className="stat-info">
-                  <div className="stat-value">
-                    {value || 0}
-                  </div>
-
-                  <div className="stat-label">
-                    {label}
-                  </div>
-                </div>
+            <div className="stat-card">
+              <div className="stat-icon">💬</div>
+              <div className="stat-info">
+                <div className="stat-value">{stats.conversation_count || 0}</div>
+                <div className="stat-label">{t.stats.total}</div>
               </div>
-            ))}
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">📩</div>
+              <div className="stat-info">
+                <div className="stat-value">{stats.unread_count || 0}</div>
+                <div className="stat-label">{t.stats.unread}</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">📤</div>
+              <div className="stat-info">
+                <div className="stat-value">{stats.sent_count || 0}</div>
+                <div className="stat-label">{t.stats.sent}</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">📥</div>
+              <div className="stat-info">
+                <div className="stat-value">{stats.received_count || 0}</div>
+                <div className="stat-label">{t.stats.received}</div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Main Layout */}
+        {/* Messages Container */}
         <div className="messages-container">
-
-          {/* Conversations */}
+          {/* Conversations List */}
           <div className="conversations-panel">
             <div className="panel-header">
               <h3>{t.conversations}</h3>
@@ -307,50 +221,43 @@ export default function ArtisanMessages() {
             <div className="conversations-list">
               {conversations.length === 0 ? (
                 <div className="no-conversations">
-                  {t.noConversations}
+                  <p>{t.noConversations}</p>
                 </div>
               ) : (
                 conversations.map((conv) => (
                   <div
                     key={conv.id}
                     className={`conversation-item ${
-                      selectedConversation?.id === conv.id
+                      selectedConversation?.other_user_id === conv.other_user_id
                         ? "active"
                         : ""
                     }`}
-                    onClick={() =>
-                      setSelectedConversation(conv)
-                    }
+                    onClick={() => setSelectedConversation(conv)}
                   >
                     <div className="conversation-avatar">
-                      {conv.other_user_name
-                        ?.charAt(0)
-                        .toUpperCase()}
+                      {conv.other_user_name.charAt(0).toUpperCase()}
                     </div>
-
                     <div className="conversation-info">
                       <div className="conversation-header">
                         <h4>{conv.other_user_name}</h4>
-
                         <span className="conversation-time">
                           {formatTime(conv.created_at)}
                         </span>
                       </div>
-
                       <div className="conversation-preview">
-                        {conv.sender_id === user.id && (
-                          <span className="you">
-                            {t.you}:{" "}
-                          </span>
-                        )}
-                        {conv.message_text}
+                        <span className={conv.sender_id === user.id ? "you" : ""}>
+                          {conv.sender_id === user.id && `${t.you}: `}
+                        </span>
+                        <span className="preview-text">{conv.message_text}</span>
                       </div>
+                      {conv.craft_title && (
+                        <div className="conversation-craft">
+                          📦 {conv.craft_title}
+                        </div>
+                      )}
                     </div>
-
                     {conv.unread_count > 0 && (
-                      <div className="unread-badge">
-                        {conv.unread_count}
-                      </div>
+                      <div className="unread-badge">{conv.unread_count}</div>
                     )}
                   </div>
                 ))
@@ -358,46 +265,43 @@ export default function ArtisanMessages() {
             </div>
           </div>
 
-          {/* Chat Panel */}
+          {/* Messages Panel */}
           <div className="messages-panel">
             {selectedConversation ? (
               <>
                 <div className="messages-header">
                   <div className="header-user-info">
                     <div className="user-avatar">
-                      {selectedConversation.other_user_name
-                        ?.charAt(0)
-                        .toUpperCase()}
+                      {selectedConversation.other_user_name.charAt(0).toUpperCase()}
                     </div>
-
                     <div>
-                      <h3>
-                        {
-                          selectedConversation.other_user_name
-                        }
-                      </h3>
+                      <h3>{selectedConversation.other_user_name}</h3>
+                      <p className="user-role">
+                        {selectedConversation.other_user_role === "buyer"
+                          ? "Buyer"
+                          : "Artisan"}
+                      </p>
                     </div>
                   </div>
+                  {selectedConversation.craft_title && (
+                    <div className="header-craft-info">
+                      <span>📦 Regarding: {selectedConversation.craft_title}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Chat Messages */}
                 <div className="messages-body">
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`message ${
-                        msg.sender_id === user.id
-                          ? "sent"
-                          : "received"
+                        msg.sender_id === user.id ? "sent" : "received"
                       }`}
                     >
                       <div className="message-bubble">
                         <p>{msg.message_text}</p>
-
                         <span className="message-time">
-                          {new Date(
-                            msg.created_at
-                          ).toLocaleTimeString("en-US", {
+                          {new Date(msg.created_at).toLocaleTimeString("en-US", {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
@@ -407,28 +311,19 @@ export default function ArtisanMessages() {
                   ))}
                 </div>
 
-                {/* Send Message */}
-                <form
-                  className="message-input-form"
-                  onSubmit={handleSendMessage}
-                >
+                <form className="message-input-form" onSubmit={handleSendMessage}>
                   <input
                     type="text"
                     className="message-input"
                     placeholder={t.typeMessage}
                     value={newMessage}
-                    onChange={(e) =>
-                      setNewMessage(e.target.value)
-                    }
+                    onChange={(e) => setNewMessage(e.target.value)}
                     disabled={sending}
                   />
-
                   <button
                     type="submit"
                     className="send-button"
-                    disabled={
-                      sending || !newMessage.trim()
-                    }
+                    disabled={sending || !newMessage.trim()}
                   >
                     {sending ? "..." : t.send}
                   </button>
@@ -443,7 +338,6 @@ export default function ArtisanMessages() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

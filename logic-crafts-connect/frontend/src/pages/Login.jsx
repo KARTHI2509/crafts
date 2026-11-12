@@ -1,20 +1,16 @@
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
-import "./Auth.css";
+import useForm from "../hooks/useForm";
+import { formSchemas } from "../utils/validation";
+import FormInput from "../components/FormInput";
+import { FormButton } from "../components/FormInput";
+import toast from "react-hot-toast";
+
 export default function Login() {
   const { language } = useContext(LanguageContext);
-  const { login } = useAuth();
-
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { login: authLogin } = useAuth();
 
   const content = {
     en: {
@@ -25,137 +21,100 @@ export default function Login() {
       createAccount: "Create Account",
       forgotPassword: "Forgot password?",
       clickHere: "Click here",
-      show: "Show",
-      hide: "Hide",
       loggingIn: "Logging in...",
       invalidCredentials: "Invalid email or password",
+      loginSuccess: "Login successful!",
     },
     te: {
       title: "లాగిన్",
-      email: "ఇమెయిల్",
+      email: "ఇమేల్",
       password: "పాస్‌వర్డ్",
       loginBtn: "లాగిన్",
-      createAccount: "కొత్త ఖాతా సృష్టించండి",
-      forgotPassword: "పాస్‌వర్డ్ మర్చిపోయారా?",
+      createAccount: "కొత్త ఖాతాను సృష్టించండి",
+      forgotPassword: "పాస్‌వర్డ్ మరచిపోయారా?",
       clickHere: "ఇక్కడ క్లిక్ చేయండి",
-      show: "చూపు",
-      hide: "దాచు",
       loggingIn: "లాగిన్ అవుతోంది...",
-      invalidCredentials: "తప్పు ఇమెయిల్ లేదా పాస్‌వర్డ్",
+      invalidCredentials: "చెల్లని ఇమేల్ లేదా పాస్‌వర్డ్",
+      loginSuccess: "లాగిన్ విజయవంతం!",
     },
   };
 
   const t = content[language] || content.en;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value.trimStart(),
-    }));
-
-    if (error) setError("");
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    if (!form.email || !form.password) {
-      setError(t.invalidCredentials);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await login(form.email, form.password);
-
+  const form = useForm({
+    initialValues: { email: "", password: "" },
+    validationSchema: formSchemas.login,
+    onSubmit: async (values) => {
+      const result = await authLogin(values.email, values.password);
+      
       if (!result.success) {
-        setError(result.message || t.invalidCredentials);
+        throw new Error(result.message || t.invalidCredentials);
       }
-    } catch (err) {
-      console.error("Login Error:", err);
-      setError(err.message || t.invalidCredentials);
-    } finally {
-      setLoading(false);
+      toast.success(t.loginSuccess);
+      // Success redirect is handled by AuthContext
+    },
+  });
+
+  // Show submit error as toast
+  React.useEffect(() => {
+    if (form.submitError) {
+      toast.error(form.submitError);
     }
-  };
+  }, [form.submitError]);
 
   return (
-    <div className="form-container">
-      <div className="form">
-        <h3>{t.title}</h3>
+    <div className="form">
+      <h3>{t.title}</h3>
+      
+      <form {...form.getFormProps()}>
+        {/* Email */}
+        <div className="field">
+          <FormInput
+            label={t.email}
+            type="email"
+            placeholder={t.email}
+            disabled={form.isSubmitting}
+            autoComplete="email"
+            required
+            {...form.getFieldProps("email")}
+          />
+        </div>
 
-        {error && <div className="error-box">{error}</div>}
+        {/* Password */}
+        <div className="field">
+          <FormInput
+            label={t.password}
+            type="password"
+            placeholder={t.password}
+            disabled={form.isSubmitting}
+            autoComplete="current-password"
+            showPasswordToggle
+            required
+            {...form.getFieldProps("password")}
+          />
+        </div>
 
-        <form onSubmit={handleLogin}>
-          {/* Email */}
-          <div className="field">
-            <label>{t.email}</label>
-            <input
-              type="email"
-              name="email"
-              className="input"
-              placeholder={t.email}
-              value={form.email}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          {/* Password */}
-          <div className="field">
-            <label>{t.password}</label>
-
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                className="input"
-                placeholder={t.password}
-                value={form.password}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label="Toggle password visibility"
-              >
-                {showPassword ? t.hide : t.show}
-              </button>
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="actions">
-            <button type="submit" className="btn" disabled={loading}>
-              {loading ? t.loggingIn : t.loginBtn}
+        {/* Actions */}
+        <div className="actions">
+          <FormButton 
+            type="submit" 
+            loading={form.isSubmitting}
+            disabled={!form.isValid && Object.keys(form.touched).length > 0}
+          >
+            {t.loginBtn}
+          </FormButton>
+          <Link to="/register">
+            <button type="button" className="btn secondary" disabled={form.isSubmitting}>
+              {t.createAccount}
             </button>
+          </Link>
+        </div>
+      </form>
 
-            <Link to="/register">
-              <button
-                type="button"
-                className="btn secondary"
-                disabled={loading}
-              >
-                {t.createAccount}
-              </button>
-            </Link>
-          </div>
-        </form>
-
-        {/* Forgot Password */}
-        <p className="helper-text">
-          {t.forgotPassword} <Link to="/reset">{t.clickHere}</Link>
-        </p>
-      </div>
+      {/* Helper link */}
+      <p style={{ marginTop: "10px", fontSize: "14px", color: "var(--muted)" }}>
+        {t.forgotPassword} <Link to="/forgot-password">{t.clickHere}</Link>
+      </p>
     </div>
   );
 }

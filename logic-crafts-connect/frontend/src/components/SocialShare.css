@@ -1,0 +1,161 @@
+.social-share {
+  position: relative;
+  display: inline-block;
+}
+
+.share-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--muted-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.share-trigger:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.share-icon {
+  font-size: 16px;
+}
+
+.share-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99;
+}
+
+.share-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 220px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-header {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.share-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 12px;
+}
+
+.share-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-option:hover {
+  background: var(--muted-bg);
+}
+
+.share-option:hover .option-icon {
+  transform: scale(1.2);
+}
+
+.option-icon {
+  font-size: 24px;
+  transition: transform 0.2s ease;
+}
+
+.option-name {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.copy-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: var(--muted-bg);
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.copy-link-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Inline share (for product cards) */
+.social-share.inline .share-trigger {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.social-share.inline .share-text {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .share-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 16px 16px 0 0;
+    min-width: 100%;
+  }
+
+  .share-options {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 16px;
+  }
+}

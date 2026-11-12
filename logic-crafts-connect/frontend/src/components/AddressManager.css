@@ -1,0 +1,403 @@
+/* Address Manager */
+.address-manager {
+  background: var(--bg-primary, white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.address-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.address-manager-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  margin: 0;
+}
+
+.add-address-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--primary-color, #8B4513);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.add-address-btn:hover {
+  background: var(--primary-dark, #6B3410);
+}
+
+.add-address-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Address Form */
+.address-form {
+  background: var(--bg-secondary, #f9f9f9);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  margin-bottom: 0.5rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="tel"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--bg-primary, white);
+  color: var(--text-primary, #333);
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary-color, #8B4513);
+}
+
+/* Address Type Options */
+.address-type-options {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--bg-primary, white);
+}
+
+.type-option:hover {
+  border-color: var(--primary-color, #8B4513);
+}
+
+.type-option.selected {
+  border-color: var(--primary-color, #8B4513);
+  background: rgba(139, 69, 19, 0.05);
+  color: var(--primary-color, #8B4513);
+}
+
+.type-option input {
+  display: none;
+}
+
+.type-option svg {
+  width: 18px;
+  height: 18px;
+}
+
+.type-option span {
+  font-size: 0.9rem;
+}
+
+/* Checkbox Group */
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color, #8B4513);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.btn-cancel {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 8px;
+  color: var(--text-secondary, #666);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: var(--bg-hover, #f0f0f0);
+}
+
+.btn-save {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-color, #8B4513);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-save:hover {
+  background: var(--primary-dark, #6B3410);
+}
+
+/* No Addresses */
+.no-addresses {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted, #999);
+}
+
+.no-addresses svg {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-addresses h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary, #333);
+  margin-bottom: 0.5rem;
+}
+
+.no-addresses p {
+  font-size: 0.9rem;
+}
+
+/* Address List */
+.address-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.address-card {
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  background: var(--bg-primary, white);
+}
+
+.address-card:hover {
+  border-color: var(--primary-color, #8B4513);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.address-card.default {
+  border-color: var(--primary-color, #8B4513);
+  background: rgba(139, 69, 19, 0.02);
+}
+
+.address-card.selected {
+  border-color: #27ae60;
+  background: rgba(39, 174, 96, 0.05);
+}
+
+.address-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.address-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary, #666);
+}
+
+.address-type-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+.address-type-badge span {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.default-badge {
+  font-size: 0.75rem;
+  background: var(--primary-color, #8B4513);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.address-content {
+  margin-bottom: 1rem;
+}
+
+.address-name {
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  margin-bottom: 0.25rem;
+}
+
+.address-phone {
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.address-text {
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Address Actions */
+.address-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.btn-action {
+  padding: 0.4rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  color: var(--text-secondary, #666);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-action:hover {
+  background: var(--bg-hover, #f0f0f0);
+  border-color: var(--text-secondary, #666);
+}
+
+.btn-action.delete {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.btn-action.delete:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-select {
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  color: var(--text-primary, #333);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-select:hover {
+  background: var(--primary-color, #8B4513);
+  color: white;
+  border-color: var(--primary-color, #8B4513);
+}
+
+.btn-select.selected {
+  background: #27ae60;
+  color: white;
+  border-color: #27ae60;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .address-form {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .form-group input {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .type-option {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .address-card {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .address-manager {
+    padding: 1rem;
+  }
+
+  .address-manager-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-address-btn {
+    justify-content: center;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .address-type-options {
+    flex-direction: column;
+  }
+
+  .type-option {
+    justify-content: center;
+  }
+}

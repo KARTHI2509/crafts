@@ -1,19 +1,81 @@
-import Craft from '../models/Craft.js';
-import User from '../models/User.js';
-
 /**
  * ============================================
- * CREATE NEW CRAFT
+ * CRAFT CONTROLLER
  * ============================================
+ * Handles all craft-related operations:
+ * - Create new craft
+ * - Get all crafts
+ * - Get single craft
+ * - Get user's crafts
+ * - Update craft
+ * - Delete craft
+ * - Admin operations (approve/reject crafts)
+ */
+
+import {
+  createCraft,
+  getAllCrafts,
+  getAllCraftsAdmin,
+  getCraftById,
+  getCraftsByUser,
+  updateCraft,
+  deleteCraft,
+  deleteCraftAdmin,
+  updateCraftStatus,
+  getPendingCrafts,
+  trackCraftView,
+  saveCraft,
+  unsaveCraft,
+  isCraftSaved,
+  getArtisanStats,
+  toggleCraftVisibility,
+  getCraftsCount,
+  getCraftsCountFiltered,
+  getRelatedCrafts
+} from '../models/craftModel.js';
+
+/**
+ * @desc    Create a new craft
+ * @route   POST /api/crafts
+ * @access  Private (authenticated users only)
  */
 export const createNewCraft = async (req, res) => {
   try {
-    const craft = await Craft.create({
-      ...req.body,
+    const { 
+      name, description, craft_type, price, location, image_url, contact,
+      images, category, stock, delivery_days, is_featured, is_new_arrival,
+      made_to_order, limited_edition
+    } = req.body;
+
+    // Validation
+    if (!name || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide craft name and description'
+      });
+    }
+
+    // Create craft with user ID from authenticated user
+    const craftData = {
       user_id: req.user.id,
-      location: req.body.location || req.user.location,
-      contact: req.body.contact || req.user.phone
-    });
+      name,
+      description,
+      craft_type,
+      price,
+      location: location || req.user.location,
+      image_url,
+      contact: contact || req.user.phone,
+      images,
+      category,
+      stock,
+      delivery_days,
+      is_featured,
+      is_new_arrival,
+      made_to_order,
+      limited_edition
+    };
+
+    const craft = await createCraft(craftData);
 
     res.status(201).json({
       success: true,
@@ -21,63 +83,120 @@ export const createNewCraft = async (req, res) => {
       data: { craft }
     });
   } catch (error) {
+    console.error('Create craft error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error creating craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * GET ALL APPROVED CRAFTS
- * ============================================
+ * @desc    Get all approved crafts (public view)
+ * @route   GET /api/crafts
+ * @access  Public
  */
 export const getCrafts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
-
-    const crafts = await Craft.find({
-      status: 'approved',
-      visibility: 'public'
-    })
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    const totalCount = await Craft.countDocuments({
-      status: 'approved',
-      visibility: 'public'
-    });
+    const offset = (page - 1) * limit;
+    
+    // Extract filter parameters
+    const filters = {
+      search: req.query.search || req.query.q,
+      category: req.query.category,
+      minPrice: req.query.minPrice,
+      maxPrice: req.query.maxPrice,
+      location: req.query.location,
+      sort: req.query.sort
+    };
+    
+    const crafts = await getAllCrafts(limit, offset, filters);
+    const totalCount = await getCraftsCountFiltered(filters);
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
       success: true,
       count: crafts.length,
-      data: {
+      data: { 
         crafts,
         pagination: {
           currentPage: page,
-          totalPages: Math.ceil(totalCount / limit),
-          totalCount
+          totalPages,
+          totalCount,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
         }
       }
     });
   } catch (error) {
+    console.error('Get crafts error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching crafts',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * GET SINGLE CRAFT
- * ============================================
+ * @desc    Get all crafts including pending (admin only)
+ * @route   GET /api/crafts/admin/all
+ * @access  Private/Admin
+ */
+export const getAllCraftsForAdmin = async (req, res) => {
+  try {
+    const crafts = await getAllCraftsAdmin();
+
+    res.status(200).json({
+      success: true,
+      count: crafts.length,
+      data: { crafts }
+    });
+  } catch (error) {
+    console.error('Get all crafts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching crafts',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get pending crafts for review (admin only)
+ * @route   GET /api/crafts/admin/pending
+ * @access  Private/Admin
+ */
+export const getPendingCraftsForAdmin = async (req, res) => {
+  try {
+    const crafts = await getPendingCrafts();
+
+    res.status(200).json({
+      success: true,
+      count: crafts.length,
+      data: { crafts }
+    });
+  } catch (error) {
+    console.error('Get pending crafts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching pending crafts',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get single craft by ID
+ * @route   GET /api/crafts/:id
+ * @access  Public
  */
 export const getCraft = async (req, res) => {
   try {
-    const craft = await Craft.findById(req.params.id);
+    const craft = await getCraftById(req.params.id);
 
     if (!craft) {
       return res.status(404).json({
@@ -91,23 +210,57 @@ export const getCraft = async (req, res) => {
       data: { craft }
     });
   } catch (error) {
+    console.error('Get craft error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * GET LOGGED-IN USER CRAFTS
- * ============================================
+ * @desc    Get related crafts by category
+ * @route   GET /api/crafts/:id/related
+ * @access  Public
+ */
+export const getRelatedCraftsForCraft = async (req, res) => {
+  try {
+    const craft = await getCraftById(req.params.id);
+    
+    if (!craft) {
+      return res.status(404).json({
+        success: false,
+        message: 'Craft not found'
+      });
+    }
+    
+    const limit = parseInt(req.query.limit) || 4;
+    const relatedCrafts = await getRelatedCrafts(req.params.id, craft.category, limit);
+
+    res.status(200).json({
+      success: true,
+      count: relatedCrafts.length,
+      data: { crafts: relatedCrafts }
+    });
+  } catch (error) {
+    console.error('Get related crafts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching related crafts',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get logged-in user's crafts
+ * @route   GET /api/crafts/my-crafts
+ * @access  Private
  */
 export const getMyCrafts = async (req, res) => {
   try {
-    const crafts = await Craft.find({
-      user_id: req.user.id
-    });
+    const crafts = await getCraftsByUser(req.user.id);
 
     res.status(200).json({
       success: true,
@@ -115,33 +268,51 @@ export const getMyCrafts = async (req, res) => {
       data: { crafts }
     });
   } catch (error) {
+    console.error('Get my crafts error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching your crafts',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * UPDATE CRAFT
- * ============================================
+ * @desc    Update craft
+ * @route   PUT /api/crafts/:id
+ * @access  Private (only craft owner)
  */
 export const updateCraftById = async (req, res) => {
   try {
-    const craft = await Craft.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user_id: req.user.id
-      },
-      req.body,
-      { new: true }
-    );
+    const { 
+      name, description, craft_type, price, location, image_url, contact,
+      images, category, stock, delivery_days, is_featured, is_new_arrival,
+      made_to_order, limited_edition
+    } = req.body;
+
+    // Only the owner can update their craft
+    const craft = await updateCraft(req.params.id, req.user.id, {
+      name,
+      description,
+      craft_type,
+      price,
+      location,
+      image_url,
+      contact,
+      images,
+      category,
+      stock,
+      delivery_days,
+      is_featured,
+      is_new_arrival,
+      made_to_order,
+      limited_edition
+    });
 
     if (!craft) {
       return res.status(404).json({
         success: false,
-        message: 'Craft not found'
+        message: 'Craft not found or you do not have permission to update it'
       });
     }
 
@@ -151,26 +322,96 @@ export const updateCraftById = async (req, res) => {
       data: { craft }
     });
   } catch (error) {
+    console.error('Update craft error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error updating craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * DELETE OWN CRAFT
- * ============================================
+ * @desc    Delete craft
+ * @route   DELETE /api/crafts/:id
+ * @access  Private (only craft owner)
  */
 export const deleteCraftById = async (req, res) => {
   try {
-    const craft = await Craft.findOneAndDelete({
-      _id: req.params.id,
-      user_id: req.user.id
+    const deleted = await deleteCraft(req.params.id, req.user.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Craft not found or you do not have permission to delete it'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Craft deleted successfully'
     });
+  } catch (error) {
+    console.error('Delete craft error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting craft',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Approve or reject craft (admin only)
+ * @route   PATCH /api/crafts/:id/status
+ * @access  Private/Admin
+ */
+export const updateStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    // Validate status
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be approved, rejected, or pending'
+      });
+    }
+
+    const craft = await updateCraftStatus(req.params.id, status);
 
     if (!craft) {
+      return res.status(404).json({
+        success: false,
+        message: 'Craft not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Craft ${status} successfully`,
+      data: { craft }
+    });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating craft status',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Delete any craft (admin only)
+ * @route   DELETE /api/crafts/admin/:id
+ * @access  Private/Admin
+ */
+export const deleteCraftByAdmin = async (req, res) => {
+  try {
+    const deleted = await deleteCraftAdmin(req.params.id);
+
+    if (!deleted) {
       return res.status(404).json({
         success: false,
         message: 'Craft not found'
@@ -182,279 +423,209 @@ export const deleteCraftById = async (req, res) => {
       message: 'Craft deleted successfully'
     });
   } catch (error) {
+    console.error('Delete craft (admin) error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error deleting craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * ADMIN: UPDATE CRAFT STATUS
- * ============================================
- */
-export const updateStatus = async (req, res) => {
-  try {
-    const craft = await Craft.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    );
-
-    res.status(200).json({
-      success: true,
-      data: { craft }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * TRACK CRAFT VIEW
- * ============================================
+ * @desc    Track craft view
+ * @route   POST /api/crafts/:id/view
+ * @access  Public
  */
 export const trackView = async (req, res) => {
   try {
-    await Craft.findByIdAndUpdate(req.params.id, {
-      $inc: { view_count: 1 }
-    });
+    const craftId = req.params.id;
+    const userId = req.user?.id || null; // Optional authentication
+
+    const success = await trackCraftView(craftId, userId);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error tracking view'
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: 'View tracked'
     });
   } catch (error) {
+    console.error('Track view error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error tracking view',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * SAVE CRAFT
- * ============================================
+ * @desc    Save/bookmark a craft
+ * @route   POST /api/crafts/:id/save
+ * @access  Private
  */
 export const saveACraft = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user.id, {
-      $addToSet: { wishlist: req.params.id }
-    });
+    const craftId = req.params.id;
+    const userId = req.user.id;
+
+    const success = await saveCraft(craftId, userId);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error saving craft'
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: 'Craft saved successfully'
     });
   } catch (error) {
+    console.error('Save craft error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error saving craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * UNSAVE CRAFT
- * ============================================
+ * @desc    Unsave/unbookmark a craft
+ * @route   DELETE /api/crafts/:id/save
+ * @access  Private
  */
 export const unsaveACraft = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user.id, {
-      $pull: { wishlist: req.params.id }
-    });
+    const craftId = req.params.id;
+    const userId = req.user.id;
+
+    const success = await unsaveCraft(craftId, userId);
+
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        message: 'Craft was not saved'
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: 'Craft unsaved successfully'
     });
   } catch (error) {
+    console.error('Unsave craft error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error unsaving craft',
+      error: error.message
     });
   }
 };
 
 /**
- * ============================================
- * CHECK SAVED STATUS
- * ============================================
- */
-export const checkSavedStatus = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    const saved = user?.wishlist?.includes(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      data: { saved }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * TOGGLE CRAFT VISIBILITY
- * ============================================
- */
-export const toggleVisibility = async (req, res) => {
-  try {
-    const craft = await Craft.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user_id: req.user.id
-      },
-      { visibility: req.body.visibility },
-      { new: true }
-    );
-
-    res.status(200).json({
-      success: true,
-      data: { craft }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * ADMIN: GET ALL CRAFTS
- * ============================================
- */
-export const getAllCraftsForAdmin = async (req, res) => {
-  try {
-    const crafts = await Craft.find();
-
-    res.status(200).json({
-      success: true,
-      count: crafts.length,
-      data: { crafts }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * ADMIN: GET PENDING CRAFTS
- * ============================================
- */
-export const getPendingCraftsForAdmin = async (req, res) => {
-  try {
-    const crafts = await Craft.find({
-      status: 'pending'
-    });
-
-    res.status(200).json({
-      success: true,
-      count: crafts.length,
-      data: { crafts }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * ARTISAN STATS
- * ============================================
+ * @desc    Get artisan statistics
+ * @route   GET /api/crafts/artisan/stats
+ * @access  Private (Artisan only)
  */
 export const getStats = async (req, res) => {
   try {
-    const totalCrafts = await Craft.countDocuments({
-      user_id: req.user.id
-    });
+    const userId = req.user.id;
 
-    const approvedCrafts = await Craft.countDocuments({
-      user_id: req.user.id,
-      status: 'approved'
-    });
+    const stats = await getArtisanStats(userId);
 
-    const pendingCrafts = await Craft.countDocuments({
-      user_id: req.user.id,
-      status: 'pending'
-    });
-
-    const totalViews = await Craft.aggregate([
-      {
-        $match: {
-          user_id: req.user.id
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalViews: { $sum: '$view_count' }
-        }
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        totalCrafts,
-        approvedCrafts,
-        pendingCrafts,
-        totalViews: totalViews[0]?.totalViews || 0
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-/**
- * ============================================
- * ADMIN: DELETE ANY CRAFT
- * ============================================
- */
-export const deleteCraftByAdmin = async (req, res) => {
-  try {
-    const craft = await Craft.findByIdAndDelete(req.params.id);
-
-    if (!craft) {
-      return res.status(404).json({
+    if (!stats) {
+      return res.status(500).json({
         success: false,
-        message: 'Craft not found'
+        message: 'Error fetching statistics'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Craft deleted by admin successfully'
+      data: { stats }
     });
   } catch (error) {
+    console.error('Get stats error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Error fetching statistics',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Check if craft is saved by user
+ * @route   GET /api/crafts/:id/saved
+ * @access  Private
+ */
+export const checkSavedStatus = async (req, res) => {
+  try {
+    const craftId = req.params.id;
+    const userId = req.user.id;
+
+    const isSaved = await isCraftSaved(craftId, userId);
+
+    res.status(200).json({
+      success: true,
+      data: { isSaved }
+    });
+  } catch (error) {
+    console.error('Check saved status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking saved status',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Toggle craft visibility (artisan only)
+ * @route   PATCH /api/crafts/:id/visibility
+ * @access  Private (only craft owner)
+ */
+export const toggleVisibility = async (req, res) => {
+  try {
+    const { visibility } = req.body;
+
+    // Validate visibility
+    if (!['public', 'hidden'].includes(visibility)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid visibility. Must be public or hidden'
+      });
+    }
+
+    const craft = await toggleCraftVisibility(req.params.id, req.user.id, visibility);
+
+    if (!craft) {
+      return res.status(404).json({
+        success: false,
+        message: 'Craft not found or you do not have permission to update it'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Craft visibility set to ${visibility} successfully`,
+      data: { craft }
+    });
+  } catch (error) {
+    console.error('Toggle visibility error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating craft visibility',
+      error: error.message
     });
   }
 };

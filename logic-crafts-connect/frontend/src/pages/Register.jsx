@@ -1,23 +1,16 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
-import "./Auth.css";
+import useForm from "../hooks/useForm";
+import { validationRules } from "../utils/validation";
+import FormInput from "../components/FormInput";
+import { FormButton } from "../components/FormInput";
+import toast from "react-hot-toast";
+
 export default function Register() {
   const { language } = useContext(LanguageContext);
   const { register: authRegister } = useAuth();
-  const [form, setForm] = useState({ 
-    name: "", 
-    email: "", 
-    password: "", 
-    confirmPassword: "",
-    role: "artisan",
-    location: "",
-    phone: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const content = {
     en: {
@@ -30,13 +23,10 @@ export default function Register() {
       artisan: "Artisan (Seller)",
       buyer: "Buyer",
       location: "Location (City, State)",
-      myStory: "My Story (For Artisans)",
-      storyPlaceholder: "Tell us about yourself - your craft journey, heritage, experience, or passion...",
+      phone: "Phone Number",
       registerBtn: "Register",
       alreadyHaveAccount: "Already have an account?",
-      passwordMismatch: "Passwords do not match!",
-      show: "Show",
-      hide: "Hide",
+      registerSuccess: "Registration successful! Please log in.",
     },
     te: {
       title: "కొత్త ఖాతాను సృష్టించండి",
@@ -48,161 +38,147 @@ export default function Register() {
       artisan: "కళాకారుడు (విక్రేత)",
       buyer: "కొనుగోలుదారు",
       location: "స్థానం (నగరం, రాష్ట్రం)",
-      myStory: "నా కథ (కళాకారుల కోసం)",
-      storyPlaceholder: "మీ గురించి మాకు చెప్పండి - మీ హస్తకళా ప్రయాణం, వారసత్వం, అనుభవం లేదా అభిరుచి...",
+      phone: "ఫోన్ నంబర్",
       registerBtn: "నమోదు చేయండి",
       alreadyHaveAccount: "ఇది గతంలో ఖాతా ఉందా?",
-      passwordMismatch: "పాస్‌వర్డ్‌లు సరిపోలేదు!",
-      show: "చూపు",
-      hide: "దాచు",
+      registerSuccess: "నమోదు విజయవంతమైంది! దయచేసి లాగిన్ అవండి.",
     },
   };
 
   const t = content[language] || content.en;
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
-  };
+  // State for password to use in confirm password validation
+  const [passwordValue, setPasswordValue] = React.useState("");
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    
-    if (form.password !== form.confirmPassword) {
-      setError(t.passwordMismatch);
-      return;
-    }
-    
-    // Validate password length
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-    
-    // Basic client-side validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    if (!form.name.trim()) {
-      setError('Please enter your full name');
-      return;
-    }
-
-    if (!form.location.trim()) {
-      setError('Please enter your location');
-      return;
-    }
-
-    if (form.phone && !/^\+?[0-9\s-]{7,15}$/.test(form.phone)) {
-      setError('Please enter a valid phone number');
-      return;
-    }
-
-    try {
-      setError("");
-      setSuccess("");
+  // Dynamic validation schema that updates with password changes
+  const form = useForm({
+    initialValues: { 
+      name: "", 
+      email: "", 
+      password: "", 
+      confirmPassword: "",
+      role: "artisan",
+      location: "",
+      phone: "",
+    },
+    validationSchema: {
+      name: {
+        label: 'Name',
+        rules: [
+          validationRules.required,
+          validationRules.minLength(2),
+          validationRules.maxLength(50),
+        ],
+      },
+      email: {
+        label: 'Email',
+        rules: [validationRules.required, validationRules.email],
+      },
+      password: {
+        label: 'Password',
+        rules: [validationRules.required, validationRules.password],
+      },
+      confirmPassword: {
+        label: 'Confirm Password',
+        rules: [
+          validationRules.required,
+          validationRules.confirmPassword(passwordValue),
+        ],
+      },
+      location: {
+        label: 'Location',
+        rules: [validationRules.required],
+      },
+      phone: {
+        label: 'Phone',
+        rules: [validationRules.phone],
+      },
+    },
+    onSubmit: async (values) => {
+      // Final password match check before submit
+      if (values.password !== values.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
       
-      // Prepare registration data
       const registrationData = {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        role: form.role,  // Send 'artisan' or 'buyer' directly
-        location: form.location,
-        phone: form.phone || '',
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+        location: values.location,
+        phone: values.phone || '',
       };
       
-      // Debug log
-      console.log('Registering with role:', registrationData.role);
-      console.log('Full registration data:', registrationData);
-      
       const result = await authRegister(registrationData);
-
-      if (result.success) {
-        setSuccess(result.message || 'Registration successful! Redirecting to login...');
-        // AuthContext will handle redirect to login page
-      } else {
-        setError(result.message || 'Registration failed. Please try again.');
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Registration failed. Please try again.');
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError(error.message || 'Registration failed. Please try again.');
-    }
+      toast.success(t.registerSuccess);
+      // AuthContext will handle redirect
+    },
+  });
+
+  // Sync password value for confirm validation
+  React.useEffect(() => {
+    setPasswordValue(form.values.password);
+  }, [form.values.password]);
+
+  // Handle role change separately (radio buttons)
+  const handleRoleChange = (e) => {
+    form.setFieldValue('role', e.target.value);
   };
+
+  // Show submit error as toast
+  React.useEffect(() => {
+    if (form.submitError) {
+      toast.error(form.submitError);
+    }
+  }, [form.submitError]);
 
   return (
     <div className="form">
       <h3>{t.title}</h3>
       
-      {error && (
-        <div style={{
-          padding: '10px', 
-          marginBottom: '16px', 
-          background: '#fee', 
-          color: '#c33',
-          borderRadius: '6px',
-          fontSize: '14px',
-        }}>
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div style={{
-          padding: '10px', 
-          marginBottom: '16px', 
-          background: '#d4edda', 
-          color: '#155724',
-          borderRadius: '6px',
-          fontSize: '14px',
-        }}>
-          {success}
-        </div>
-      )}
-      
-      <form onSubmit={handleRegister}>
+      <form {...form.getFormProps()}>
         {/* Name */}
         <div className="field">
-          <label>{t.name}</label>
-          <input
+          <FormInput
+            label={t.name}
             type="text"
-            className="input"
-            name="name"
-            value={form.name}
             placeholder={t.name}
-            onChange={handleChange}
+            disabled={form.isSubmitting}
+            autoComplete="name"
             required
+            {...form.getFieldProps("name")}
           />
         </div>
 
         {/* Email */}
         <div className="field">
-          <label>{t.email}</label>
-          <input
+          <FormInput
+            label={t.email}
             type="email"
-            className="input"
-            name="email"
-            value={form.email}
             placeholder={t.email}
-            onChange={handleChange}
+            disabled={form.isSubmitting}
+            autoComplete="email"
             required
+            {...form.getFieldProps("email")}
           />
         </div>
 
         {/* Role Selection */}
         <div className="field">
-          <label>{t.role}</label>
+          <label className="form-label">{t.role}</label>
           <div style={{display: 'flex', gap: '16px', marginTop: '8px'}}>
             <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
               <input
                 type="radio"
                 name="role"
                 value="artisan"
-                checked={form.role === "artisan"}
-                onChange={handleChange}
+                checked={form.values.role === "artisan"}
+                onChange={handleRoleChange}
+                disabled={form.isSubmitting}
               />
               {t.artisan}
             </label>
@@ -211,8 +187,9 @@ export default function Register() {
                 type="radio"
                 name="role"
                 value="buyer"
-                checked={form.role === "buyer"}
-                onChange={handleChange}
+                checked={form.values.role === "buyer"}
+                onChange={handleRoleChange}
+                disabled={form.isSubmitting}
               />
               {t.buyer}
             </label>
@@ -221,84 +198,70 @@ export default function Register() {
 
         {/* Location */}
         <div className="field">
-          <label>{t.location}</label>
-          <input
+          <FormInput
+            label={t.location}
             type="text"
-            className="input"
-            name="location"
-            value={form.location}
             placeholder="Jaipur, Rajasthan"
-            onChange={handleChange}
+            disabled={form.isSubmitting}
             required
+            {...form.getFieldProps("location")}
           />
         </div>
 
         {/* Phone Number */}
         <div className="field">
-          <label>Phone Number</label>
-          <input
+          <FormInput
+            label={t.phone}
             type="tel"
-            className="input"
-            name="phone"
-            value={form.phone}
-            placeholder="+91 1234567890"
-            onChange={handleChange}
+            placeholder="9876543210"
+            disabled={form.isSubmitting}
+            autoComplete="tel"
+            {...form.getFieldProps("phone")}
           />
         </div>
 
         {/* Password */}
         <div className="field">
-          <label>{t.password}</label>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              className="input"
-              name="password"
-              value={form.password}
-              placeholder={t.password}
-              onChange={handleChange}
-              required
-              minLength="6"
-            />
-            <span
-              style={{
-                position: "absolute",
-                right: "12px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                cursor: "pointer",
-                fontSize: "12px",
-                color: "var(--muted)",
-              }}
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? t.hide : t.show}
-            </span>
-          </div>
+          <FormInput
+            label={t.password}
+            type="password"
+            placeholder={t.password}
+            disabled={form.isSubmitting}
+            autoComplete="new-password"
+            showPasswordToggle
+            required
+            {...form.getFieldProps("password")}
+          />
+          {!form.errors.password && form.values.password && (
+            <p className="mt-1 text-xs text-gray-500">
+              Must contain: 8+ chars, uppercase, lowercase, and number
+            </p>
+          )}
         </div>
 
         {/* Confirm Password */}
         <div className="field">
-          <label>{t.confirmPassword}</label>
-          <input
+          <FormInput
+            label={t.confirmPassword}
             type="password"
-            className="input"
-            name="confirmPassword"
-            value={form.confirmPassword}
             placeholder={t.confirmPassword}
-            onChange={handleChange}
+            disabled={form.isSubmitting}
+            autoComplete="new-password"
             required
-            minLength="6"
+            {...form.getFieldProps("confirmPassword")}
           />
         </div>
 
         {/* Actions */}
         <div className="actions">
-          <button type="submit" className="btn">
+          <FormButton 
+            type="submit" 
+            loading={form.isSubmitting}
+          >
             {t.registerBtn}
-          </button>
+          </FormButton>
           <Link to="/login">
-            <button type="button" className="btn secondary">
+            <button type="button" className="btn secondary" disabled={form.isSubmitting}>
               {t.alreadyHaveAccount}
             </button>
           </Link>

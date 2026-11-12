@@ -1,0 +1,305 @@
+.compare-page {
+  padding: 24px 0;
+  min-height: 60vh;
+}
+
+.compare-page.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-compare {
+  text-align: center;
+  padding: 48px;
+}
+
+.empty-compare .empty-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-compare h2 {
+  margin: 0 0 8px;
+  color: var(--text-dark);
+}
+
+.empty-compare p {
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+.compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.compare-header h1 {
+  font-size: 28px;
+  margin: 0;
+  color: var(--primary);
+}
+
+/* Compare Table */
+.compare-table {
+  background: var(--card-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 150px repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-row:last-child {
+  border-bottom: none;
+}
+
+.compare-row.images {
+  background: var(--bg-light);
+  padding: 24px 0;
+}
+
+.compare-row.actions {
+  padding: 16px 0;
+  background: var(--muted-bg);
+}
+
+.row-label {
+  padding: 16px 20px;
+  font-weight: 600;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  background: var(--muted-bg);
+}
+
+.product-cell {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--text);
+}
+
+.compare-row.images .product-cell {
+  gap: 12px;
+}
+
+.product-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-dark);
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+  text-decoration: underline;
+}
+
+/* Floating Compare Bar */
+.compare-bar {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.compare-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card-bg);
+  padding: 12px 16px;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+}
+
+.compare-items {
+  display: flex;
+  gap: 8px;
+}
+
+.compare-item {
+  position: relative;
+}
+
+.compare-item img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.remove-compare {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: white;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compare-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.compare-count {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.btn-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-clear:hover {
+  color: var(--danger);
+}
+
+.btn-compare {
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-compare:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.btn-compare:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add to Compare Button */
+.add-compare-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--muted-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.add-compare-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.add-compare-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.add-compare-btn.compact {
+  padding: 6px;
+}
+
+.compare-icon {
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .compare-row {
+    grid-template-columns: 100px repeat(3, 1fr);
+  }
+
+  .row-label {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .product-cell {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  .product-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .compare-bar-content {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 16px;
+    max-width: 90vw;
+  }
+}
+
+@media (max-width: 600px) {
+  .compare-table {
+    overflow-x: auto;
+  }
+
+  .compare-row {
+    min-width: 500px;
+  }
+}

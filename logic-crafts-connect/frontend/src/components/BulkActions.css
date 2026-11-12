@@ -1,0 +1,277 @@
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary, #f9f9f9);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  transition: background 0.3s ease;
+}
+
+.bulk-actions-bar.has-selection {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(212, 163, 115, 0.1));
+  border: 1px solid rgba(139, 69, 19, 0.2);
+}
+
+.selection-info {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+}
+
+.selection-count {
+  color: var(--text-primary, #333);
+}
+
+.selection-count strong {
+  color: var(--primary-color, #8B4513);
+  font-size: 1.25rem;
+}
+
+.no-selection {
+  color: var(--text-muted, #999);
+  font-style: italic;
+}
+
+/* Bulk Buttons */
+.bulk-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #ccc);
+  background: var(--bg-primary, white);
+  color: var(--text-secondary, #666);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bulk-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bulk-btn:hover {
+  border-color: var(--primary-color, #8B4513);
+  color: var(--primary-color, #8B4513);
+}
+
+.bulk-btn.select-btn {
+  background: var(--bg-primary, white);
+}
+
+.bulk-btn.visibility-btn:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.bulk-btn.stock-btn:hover {
+  background: rgba(46, 204, 113, 0.1);
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
+.bulk-btn.export-btn:hover {
+  background: rgba(155, 89, 182, 0.1);
+  border-color: #9b59b6;
+  color: #9b59b6;
+}
+
+.bulk-btn.delete-btn {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.bulk-btn.delete-btn:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+/* Modal Overlay */
+.bulk-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.bulk-modal {
+  background: var(--bg-primary, white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.bulk-modal h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  margin: 0 0 1.25rem;
+}
+
+/* Stock Options */
+.stock-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stock-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #555);
+}
+
+.stock-options label:hover {
+  border-color: var(--primary-color, #8B4513);
+}
+
+.stock-options label.active {
+  border-color: var(--primary-color, #8B4513);
+  background: rgba(139, 69, 19, 0.05);
+  color: var(--primary-color, #8B4513);
+}
+
+.stock-options input[type="radio"] {
+  accent-color: var(--primary-color, #8B4513);
+}
+
+.stock-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 1.25rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+  background: var(--bg-primary, white);
+  color: var(--text-primary, #333);
+}
+
+.stock-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #8B4513);
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 0.6rem 1.25rem;
+  background: none;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  color: var(--text-secondary, #666);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+.btn-apply {
+  padding: 0.6rem 1.25rem;
+  background: var(--primary-color, #8B4513);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-apply:hover {
+  background: var(--primary-dark, #6B3410);
+}
+
+/* Dark Mode */
+[data-theme="dark"] .bulk-actions-bar {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .bulk-actions-bar.has-selection {
+  background: rgba(139, 69, 19, 0.15);
+  border-color: rgba(139, 69, 19, 0.3);
+}
+
+[data-theme="dark"] .bulk-btn {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .bulk-modal {
+  background: var(--bg-primary);
+}
+
+[data-theme="dark"] .stock-options label {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stock-input {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bulk-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-buttons {
+    justify-content: center;
+  }
+
+  .bulk-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .bulk-btn span {
+    display: none;
+  }
+
+  .bulk-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+}

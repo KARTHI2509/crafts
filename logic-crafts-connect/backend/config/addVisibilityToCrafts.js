@@ -1,34 +1,38 @@
 /**
- * Add visibility field to crafts collection
+ * Add visibility field to crafts collection (MongoDB)
  * Adds: visibility field with default 'public'
  */
 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Craft from '../models/Craft.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Craft from '../models/craftModel.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const addVisibilityToCrafts = async () => {
   try {
     console.log('Adding visibility field to crafts collection...\n');
 
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI);
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    if (!uri) throw new Error('MONGODB_URI or DATABASE_URL is not defined.');
 
-    // Add visibility field to all crafts where it does not exist
+    await mongoose.connect(uri);
+
     const result = await Craft.updateMany(
       { visibility: { $exists: false } },
       { $set: { visibility: 'public' } }
     );
 
     console.log('✓ Visibility field added to crafts collection');
-    console.log(`✓ ${result.modifiedCount} existing crafts set to public visibility`);
-
+    console.log(`✓ ${result.modifiedCount} existing crafts updated`);
     console.log('\n✅ Visibility field added successfully!');
-    console.log('Crafts will now have visibility = "public" by default');
-    console.log('Artisans can hide crafts by setting visibility = "hidden"');
-
     process.exit(0);
   } catch (error) {
     console.error('❌ Failed to add visibility field:', error.message);

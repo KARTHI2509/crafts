@@ -1,52 +1,52 @@
 /**
- * Enhance Crafts Collection for Artisan Features
- * Adds: multiple images, stock, delivery time, featured flag, view tracking
+ * Enhance Crafts Table / Collection with extra fields (MongoDB)
  */
 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Craft from '../models/Craft.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Craft from '../models/craftModel.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const enhanceCraftsCollection = async () => {
+const enhanceCrafts = async () => {
   try {
-    console.log('Enhancing crafts collection for artisan features...\n');
+    console.log('Enhancing crafts collection with extra fields...\n');
 
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI);
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    if (!uri) throw new Error('MONGODB_URI or DATABASE_URL is not defined.');
 
-    // Update existing craft documents
+    await mongoose.connect(uri);
+
     const result = await Craft.updateMany(
       {},
       {
-        $set: {
-          images: [],
-          category: '',
-          stock: 0,
+        $setOnInsert: {
+          stock: 10,
           delivery_days: 7,
           is_featured: false,
           is_new_arrival: false,
-          view_count: 0,
-          save_count: 0,
-          order_count: 0,
           made_to_order: false,
           limited_edition: false,
-          rating: 0.0
+          visibility: 'public',
+          status: 'approved'
         }
       }
     );
 
-    console.log('✓ New fields added to crafts collection');
-    console.log(`✓ Updated ${result.modifiedCount} craft documents`);
-
-    console.log('\n✅ Crafts collection enhancement completed!');
+    console.log(`✓ Enhanced crafts documents`);
+    console.log('✅ Crafts enhancement complete!');
     process.exit(0);
-
   } catch (error) {
-    console.error('❌ Enhancement failed:', error.message);
+    console.error('❌ Error enhancing crafts:', error.message);
     process.exit(1);
   }
 };
 
-enhanceCraftsCollection();
+enhanceCrafts();

@@ -1,57 +1,36 @@
-/**
- * ============================================
- * RECENTLY VIEWED CONTROLLER
- * ============================================
- * Handles recently viewed crafts
- * - Track craft views
- * - Get viewed history
- * - Clear history
- * - Remove single item
- */
-
-import User from '../models/User.js';
+import {
+  trackView,
+  getRecentlyViewed,
+  clearRecentlyViewed,
+  removeFromRecentlyViewed
+} from '../models/recentlyViewedModel.js';
 
 /**
  * Track a craft view
  * POST /api/recently-viewed
+ * Buyer only
  */
 export const trackCraftView = async (req, res) => {
   try {
     const { craft_id } = req.body;
-
+    const buyer_id = req.user.id;
+    
     if (!craft_id) {
       return res.status(400).json({
         success: false,
         message: 'Craft ID is required'
       });
     }
-
-    const user = await User.findById(req.user.id);
-
-    // Remove if already exists
-    user.recently_viewed = user.recently_viewed.filter(
-      item => item.craft_id.toString() !== craft_id
-    );
-
-    // Add new at top
-    user.recently_viewed.unshift({
-      craft_id,
-      viewed_at: new Date()
-    });
-
-    // Keep only latest 50
-    user.recently_viewed = user.recently_viewed.slice(0, 50);
-
-    await user.save();
-
+    
+    const record = await trackView(buyer_id, craft_id);
+    
     res.status(201).json({
       success: true,
-      message: 'View tracked successfully'
+      message: 'View tracked',
+      data: { record }
     });
-
   } catch (error) {
-    console.error('Track view error:', error.message);
-
+    console.error('Track view error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to track view',
@@ -61,18 +40,17 @@ export const trackCraftView = async (req, res) => {
 };
 
 /**
- * Get recently viewed crafts
+ * Get recently viewed items
  * GET /api/recently-viewed
+ * Buyer only
  */
 export const getRecent = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
-
-    const user = await User.findById(req.user.id)
-      .populate('recently_viewed.craft_id');
-
-    const items = user.recently_viewed.slice(0, limit);
-
+    const buyer_id = req.user.id;
+    const { limit } = req.query;
+    
+    const items = await getRecentlyViewed(buyer_id, parseInt(limit) || 20);
+    
     res.json({
       success: true,
       data: {
@@ -80,43 +58,33 @@ export const getRecent = async (req, res) => {
         count: items.length
       }
     });
-
   } catch (error) {
-    console.error('Get recent error:', error.message);
-
+    console.error('Get recently viewed error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch recently viewed',
+      message: 'Failed to fetch recently viewed items',
       error: error.message
     });
   }
 };
 
 /**
- * Clear entire history
+ * Clear recently viewed history
  * DELETE /api/recently-viewed/clear
+ * Buyer only
  */
 export const clearHistory = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
-    const count = user.recently_viewed.length;
-
-    user.recently_viewed = [];
-
-    await user.save();
-
+    const buyer_id = req.user.id;
+    const count = await clearRecentlyViewed(buyer_id);
+    
     res.json({
       success: true,
       message: `${count} item(s) removed from history`,
-      data: {
-        removed_count: count
-      }
+      data: { removed_count: count }
     });
-
   } catch (error) {
-    console.error('Clear history error:', error.message);
-
+    console.error('Clear history error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to clear history',
@@ -126,27 +94,30 @@ export const clearHistory = async (req, res) => {
 };
 
 /**
- * Remove one item
+ * Remove specific item from recently viewed
  * DELETE /api/recently-viewed/:craftId
+ * Buyer only
  */
 export const removeItem = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
-    user.recently_viewed = user.recently_viewed.filter(
-      item => item.craft_id.toString() !== req.params.craftId
-    );
-
-    await user.save();
-
+    const { craftId } = req.params;
+    const buyer_id = req.user.id;
+    
+    const removed = await removeFromRecentlyViewed(buyer_id, craftId);
+    
+    if (!removed) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in recently viewed'
+      });
+    }
+    
     res.json({
       success: true,
-      message: 'Item removed successfully'
+      message: 'Item removed from recently viewed'
     });
-
   } catch (error) {
-    console.error('Remove item error:', error.message);
-
+    console.error('Remove from recently viewed error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to remove item',

@@ -1,13 +1,11 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
 import { LanguageContext } from "../context/LanguageContext";
-import { craftAPI } from "../services/api";
-import "./UploadCraft.css";
+import { craftAPI } from '../services/api';
 
 export default function UploadCraft() {
   const { language } = useContext(LanguageContext);
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -16,30 +14,59 @@ export default function UploadCraft() {
     location: "",
     story: "",
     image: null,
-    stock: 1,
-    delivery_days: 7,
   });
-
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const content = {
     en: {
       title: "Upload Your Craft",
+      subtitle: "Share your handmade creation with buyers around the world",
+      craftTitle: "Craft Title",
+      description: "Description",
+      category: "Category",
+      price: "Price (₹)",
+      location: "Location",
+      yourStory: "Your Story",
+      storyPlaceholder: "Tell us about this craft - your inspiration, techniques, heritage, or any special meaning behind it...",
+      image: "Upload Image",
+      selectCategory: "Select category",
+      pottery: "Pottery",
+      woodwork: "Woodwork",
+      textiles: "Textiles",
+      jewelry: "Jewelry",
+      metalwork: "Metalwork",
+      basketry: "Basketry",
+      other: "Other",
       uploadBtn: "Upload Craft",
-      uploading: "Uploading...",
       cancel: "Cancel",
-      invalidImage: "Only JPG, PNG, WEBP allowed",
-      fileLarge: "Image size must be less than 5MB",
+      uploading: "Uploading...",
+      successMsg: "Craft uploaded successfully! It will be visible after admin approval.",
     },
     te: {
       title: "మీ హస్తకళను అప్‌లోడ్ చేయండి",
-      uploadBtn: "అప్‌లోడ్ చేయండి",
-      uploading: "అప్‌లోడ్ చేస్తోంది...",
+      subtitle: "ప్రపంచవ్యాప్తంగా ఉన్న కొనుగోలుదారులతో మీ చేతితో తయారు చేసిన సృష్టిని పంచుకోండి",
+      craftTitle: "హస్తకళ శీర్షిక",
+      description: "వివరణ",
+      category: "వర్గం",
+      price: "ధర (₹)",
+      location: "స్థానం",
+      yourStory: "మీ కథ",
+      storyPlaceholder: "ఈ హస్తకళ గురించి మాకు చెప్పండి - మీ ప్రేరణ, సాంకేతికతలు, వారసత్వం లేదా దాని వెనుక ఏదైనా ప్రత్యేక అర్థం...",
+      image: "చిత్రాన్ని అప్‌లోడ్ చేయండి",
+      selectCategory: "వర్గాన్ని ఎంచుకోండి",
+      pottery: "కుండల పని",
+      woodwork: "కలప పని",
+      textiles: "వస్త్రాలు",
+      jewelry: "ఆభరణాలు",
+      metalwork: "లోహ పని",
+      basketry: "బుట్టల పని",
+      other: "ఇతరం",
+      uploadBtn: "హస్తకళను అప్‌లోడ్ చేయండి",
       cancel: "రద్దు చేయి",
-      invalidImage: "JPG, PNG, WEBP మాత్రమే అనుమతించబడతాయి",
-      fileLarge: "చిత్ర పరిమాణం 5MB కంటే తక్కువ ఉండాలి",
+      uploading: "అప్‌లోడ్ చేస్తోంది...",
+      successMsg: "హస్తకళ విజయవంతంగా అప్‌లోడ్ చేయబడింది! అడ్మిన్ ఆమోదం తర్వాత ఇది కనిపిస్తుంది.",
     },
   };
 
@@ -47,89 +74,62 @@ export default function UploadCraft() {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-
     if (name === "image") {
       const file = files[0];
-      if (!file) return;
-
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-      if (!allowedTypes.includes(file.type)) {
-        setError(t.invalidImage);
-        return;
+      setForm({ ...form, image: file });
+      
+      // Create image preview
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
       }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setError(t.fileLarge);
-        return;
-      }
-
-      setError("");
-      setForm((prev) => ({ ...prev, image: file }));
-      setImagePreview(URL.createObjectURL(file));
     } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+      setForm({ ...form, [name]: value });
     }
-  };
-
-  const validateForm = () => {
-    if (!form.title.trim()) return "Title required";
-    if (!form.description.trim()) return "Description required";
-    if (!form.category) return "Category required";
-    if (!form.price || Number(form.price) <= 0) return "Valid price required";
-    if (!form.location.trim()) return "Location required";
-    if (!form.image) return "Image required";
-    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     setUploading(true);
-    setError("");
 
     try {
-      const formData = new FormData();
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to upload crafts');
+        navigate('/login');
+        return;
+      }
 
-      formData.append("name", form.title);
-      formData.append("description", form.description);
-      formData.append("category", form.category);
-      formData.append("craft_type", form.category);
-      formData.append("price", form.price);
-      formData.append("location", form.location);
-      formData.append("story", form.story);
-      formData.append("stock", form.stock);
-      formData.append("delivery_days", form.delivery_days);
-      formData.append("image", form.image);
-
-      await craftAPI.create(formData);
-
-      alert("Craft uploaded successfully!");
-
-      setForm({
-        title: "",
-        description: "",
-        category: "",
-        price: "",
-        location: "",
-        story: "",
-        image: null,
+      // Prepare craft data
+      const craftData = {
+        name: form.title,
+        description: form.description,
+        category: form.category,
+        craft_type: form.category,
+        price: parseFloat(form.price),
+        location: form.location,
+        image_url: imagePreview || 'https://via.placeholder.com/400x300?text=Craft+Image',
+        images: imagePreview ? [imagePreview] : [],
+        story: form.story,
         stock: 1,
         delivery_days: 7,
-      });
+        is_new_arrival: true,
+        visibility: 'public', // Default visibility
+        status: 'approved' // Default status for immediate visibility
+      };
 
-      setImagePreview(null);
+      // Make API call to create craft
+      const response = await craftAPI.create(craftData);
 
+      console.log("Craft Submitted", response);
+      toast.success('Craft uploaded successfully! It is now visible to all buyers.');
       navigate("/dashboard");
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to upload craft");
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload craft. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -138,96 +138,144 @@ export default function UploadCraft() {
   return (
     <div className="container upload-craft">
       <h2>{t.title}</h2>
+      <p>{t.subtitle}</p>
+      <div className="form">
+        <form onSubmit={handleSubmit}>
+          {/* Title */}
+          <div className="field">
+            <label>{t.craftTitle}</label>
+            <input
+              type="text"
+              className="input"
+              name="title"
+              value={form.title}
+              placeholder={t.craftTitle}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-      {error && <div className="error-box">{error}</div>}
+          {/* Category */}
+          <div className="field">
+            <label>{t.category}</label>
+            <select
+              className="input"
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">{t.selectCategory}</option>
+              <option value="Pottery">{t.pottery}</option>
+              <option value="Woodwork">{t.woodwork}</option>
+              <option value="Textiles">{t.textiles}</option>
+              <option value="Jewelry">{t.jewelry}</option>
+              <option value="Metalwork">{t.metalwork}</option>
+              <option value="Basketry">{t.basketry}</option>
+              <option value="Other">{t.other}</option>
+            </select>
+          </div>
 
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          type="text"
-          name="title"
-          placeholder="Craft Title"
-          value={form.title}
-          onChange={handleChange}
-          className="input"
-        />
+          {/* Price and Location */}
+          <div className="row" style={{gap: '12px', alignItems: 'flex-start'}}>
+            <div className="field" style={{flex: 1}}>
+              <label>{t.price}</label>
+              <input
+                type="number"
+                className="input"
+                name="price"
+                value={form.price}
+                placeholder="500"
+                onChange={handleChange}
+                min="0"
+                required
+              />
+            </div>
 
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={form.description}
-          onChange={handleChange}
-          className="input"
-        />
+            <div className="field" style={{flex: 1}}>
+              <label>{t.location}</label>
+              <input
+                type="text"
+                className="input"
+                name="location"
+                value={form.location}
+                placeholder="Jaipur, Rajasthan"
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
 
-        <select
-          name="category"
-          value={form.category}
-          onChange={handleChange}
-          className="input"
-        >
-          <option value="">Select Category</option>
-          <option value="Pottery">Pottery</option>
-          <option value="Woodwork">Woodwork</option>
-          <option value="Textiles">Textiles</option>
-          <option value="Jewelry">Jewelry</option>
-        </select>
+          {/* Description */}
+          <div className="field">
+            <label>{t.description}</label>
+            <textarea
+              className="input"
+              name="description"
+              value={form.description}
+              placeholder={t.description}
+              onChange={handleChange}
+              required
+              style={{minHeight: '80px'}}
+            />
+          </div>
 
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          value={form.price}
-          onChange={handleChange}
-          className="input"
-        />
+          {/* Your Story */}
+          <div className="field">
+            <label>{t.yourStory}</label>
+            <textarea
+              className="input"
+              name="story"
+              value={form.story}
+              placeholder={t.storyPlaceholder}
+              onChange={handleChange}
+              style={{minHeight: '100px'}}
+            />
+          </div>
 
-        <input
-          type="text"
-          name="location"
-          placeholder="Location"
-          value={form.location}
-          onChange={handleChange}
-          className="input"
-        />
+          {/* Image Upload */}
+          <div className="field">
+            <label>{t.image}</label>
+            <input
+              type="file"
+              className="input"
+              name="image"
+              accept="image/*"
+              onChange={handleChange}
+              required
+            />
+            {imagePreview && (
+              <div style={{marginTop: '12px'}}>
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  style={{
+                    maxWidth: '300px', 
+                    maxHeight: '200px', 
+                    borderRadius: '8px',
+                    boxShadow: 'var(--shadow)',
+                  }} 
+                />
+              </div>
+            )}
+          </div>
 
-        <textarea
-          name="story"
-          placeholder="Story"
-          value={form.story}
-          onChange={handleChange}
-          className="input"
-        />
-
-        <input
-          type="file"
-          name="image"
-          accept="image/*"
-          onChange={handleChange}
-          className="input"
-        />
-
-        {imagePreview && (
-          <img
-            src={imagePreview}
-            alt="Preview"
-            className="craft-preview"
-          />
-        )}
-
-        <div className="actions">
-          <button type="submit" className="btn" disabled={uploading}>
-            {uploading ? t.uploading : t.uploadBtn}
-          </button>
-
-          <button
-            type="button"
-            className="btn secondary"
-            onClick={() => navigate("/dashboard")}
-          >
-            {t.cancel}
-          </button>
-        </div>
-      </form>
+          {/* Submit */}
+          <div className="actions">
+            <button type="submit" className="btn" disabled={uploading}>
+              {uploading ? t.uploading : t.uploadBtn}
+            </button>
+            <button 
+              type="button" 
+              className="btn secondary" 
+              onClick={() => navigate('/dashboard')}
+              disabled={uploading}
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

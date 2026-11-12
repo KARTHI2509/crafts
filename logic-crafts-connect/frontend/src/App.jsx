@@ -1,277 +1,315 @@
-import React, { lazy, Suspense } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import "./App.css";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import './App.css'; // CSS styles for all components
+import './styles/responsive.css'; // Responsive utilities
 
-import { useAuth } from "./context/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import RoleBasedRoute from "./components/RoleBasedRoute";
+import { useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleBasedRoute from './components/RoleBasedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import NotFound from './pages/NotFound';
+import Profile from './pages/Profile';
+import CraftDetail from './pages/CraftDetail';
+import Checkout from './pages/Checkout';
+import OrderConfirmation from './pages/OrderConfirmation';
 
-// Lazy Loaded Pages
-const Home = lazy(() => import("./pages/Home"));
-const Explore = lazy(() => import("./pages/Explore"));
-const UploadCraft = lazy(() => import("./pages/UploadCraft"));
-const UploadCraftEnhanced = lazy(() => import("./pages/UploadCraftEnhanced"));
-const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
-const Reset = lazy(() => import("./pages/Reset"));
-
-const ArtisanDashboard = lazy(() => import("./pages/ArtisanDashboard"));
-const ArtisanCrafts = lazy(() => import("./pages/ArtisanCrafts"));
-const ArtisanOrders = lazy(() => import("./pages/ArtisanOrders"));
-const ArtisanOrderDetails = lazy(() => import("./pages/ArtisanOrderDetails"));
-const ArtisanMessages = lazy(() => import("./pages/ArtisanMessages"));
-const ArtisanAnalytics = lazy(() => import("./pages/ArtisanAnalytics"));
-const ArtisanProfile = lazy(() => import("./pages/ArtisanProfile"));
-
-const BuyerDashboard = lazy(() => import("./pages/BuyerDashboard"));
-const Cart = lazy(() => import("./pages/Cart"));
-const Wishlist = lazy(() => import("./pages/Wishlist"));
-const BuyerOrders = lazy(() => import("./pages/BuyerOrders"));
-const OrderDetails = lazy(() => import("./pages/OrderDetails"));
-
-const AdminDashboard_Role = lazy(() => import("./pages/AdminDashboard_Role"));
-const Events = lazy(() => import("./pages/Events"));
-
-// Elegant shimmering page loader
-function SkeletonPageLoader() {
-  return (
-    <div className="container" style={{ padding: "80px 20px", minHeight: "80vh" }}>
-      <div className="skeleton-shimmer" style={{ height: "48px", width: "40%", marginBottom: "24px", borderRadius: "12px" }}></div>
-      <div className="skeleton-shimmer" style={{ height: "20px", width: "100%", marginBottom: "16px", borderRadius: "8px" }}></div>
-      <div className="skeleton-shimmer" style={{ height: "20px", width: "90%", marginBottom: "16px", borderRadius: "8px" }}></div>
-      <div className="skeleton-shimmer" style={{ height: "20px", width: "95%", marginBottom: "48px", borderRadius: "8px" }}></div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "32px" }}>
-        {[1, 2, 3].map(i => (
-          <div key={i} className="glass-premium" style={{ borderRadius: "28px", padding: "24px" }}>
-            <div className="skeleton-shimmer" style={{ height: "220px", borderRadius: "18px", marginBottom: "20px" }}></div>
-            <div className="skeleton-shimmer" style={{ height: "28px", width: "70%", marginBottom: "16px", borderRadius: "8px" }}></div>
-            <div className="skeleton-shimmer" style={{ height: "18px", width: "40%", borderRadius: "8px" }}></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Wrapper to animate page transitions
-const PageWrapper = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 15 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -15 }}
-    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", flexGrow: 1 }}
-  >
-    {children}
-  </motion.div>
-);
+import Home from './pages/Home';
+import Explore from './pages/Explore';
+import UploadCraft from './pages/UploadCraft';
+import UploadCraftEnhanced from './pages/UploadCraftEnhanced';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import ArtisanDashboard from './pages/ArtisanDashboard';
+import ArtisanCrafts from './pages/ArtisanCrafts';
+import ArtisanOrders from './pages/ArtisanOrders';
+import ArtisanOrderDetails from './pages/ArtisanOrderDetails';
+import ArtisanMessages from './pages/ArtisanMessages';
+import ArtisanAnalytics from './pages/ArtisanAnalytics';
+import ArtisanProfileEdit from './pages/ArtisanProfileEdit';
+import ArtisanReviews from './pages/ArtisanReviews';
+import ArtisanPublicProfile from './pages/ArtisanPublicProfile';
+import BuyerDashboard from './pages/BuyerDashboard';
+import BuyerMessages from './pages/BuyerMessages';
+import AdminDashboard_Role from './pages/AdminDashboard_Role';
+import ArtisanProfile from './pages/ArtisanProfile';
+import Events from './pages/Events';
+import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
+import BuyerOrders from './pages/BuyerOrders';
+import OrderDetails from './pages/OrderDetails';
+import BackToTop from './components/BackToTop';
+import MobileBottomNav from './components/MobileBottomNav';
+import PageTransition from './components/PageTransition';
+import ProductCompare, { CompareBar } from './components/ProductCompare';
 
 function App() {
   const { user, logout } = useAuth();
-  const location = useLocation();
 
   return (
-    <div className="app-root">
-      {/* Navbar */}
-      <Navbar user={user} logout={logout} />
+    <ErrorBoundary>
+      <div className="app-root">
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              style: { background: '#22c55e', color: '#fff' },
+              iconTheme: { primary: '#fff', secondary: '#22c55e' },
+            },
+            error: {
+              style: { background: '#ef4444', color: '#fff' },
+              iconTheme: { primary: '#fff', secondary: '#ef4444' },
+            },
+          }}
+        />
+        <Navbar user={user} logout={logout} />
+        <main style={{ minHeight: 'calc(100vh - 160px)', paddingTop: 24, paddingBottom: 70 }}>
+          <PageTransition>
+            <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/artisan/:id" element={<ArtisanPublicProfile />} />
+            <Route path="/craft/:id" element={<CraftDetail />} />
 
-      {/* Main Content */}
-      <main className="app-main" style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-        <Suspense fallback={<SkeletonPageLoader />}>
-          <AnimatePresence mode="wait">
-            <Routes location={location} key={location.pathname}>
-              {/* Public Routes */}
-              <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
-              <Route path="/explore" element={<PageWrapper><Explore /></PageWrapper>} />
-              <Route path="/events" element={<PageWrapper><Events /></PageWrapper>} />
-              <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
-              <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
-              <Route path="/reset" element={<PageWrapper><Reset /></PageWrapper>} />
-              <Route path="/artisan/:id" element={<PageWrapper><ArtisanProfile /></PageWrapper>} />
+            {/* Buyer Protected Routes */}
+            <Route 
+              path="/cart" 
+              element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              } 
+            />
 
-              {/* Protected Routes */}
-              <Route
-                path="/upload"
-                element={
-                  <ProtectedRoute>
-                    <PageWrapper><UploadCraft /></PageWrapper>
-                  </ProtectedRoute>
-                }
-              />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/wishlist" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <Wishlist />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/orders" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <BuyerOrders />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/orders/:orderId" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <OrderDetails />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/checkout" 
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/order-confirmation" 
+              element={
+                <ProtectedRoute>
+                  <OrderConfirmation />
+                </ProtectedRoute>
+              } 
+            />
 
-              <Route
-                path="/upload-craft-enhanced"
-                element={
-                  <ProtectedRoute>
-                    <PageWrapper><UploadCraftEnhanced /></PageWrapper>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Protected Routes - Require Authentication */}
+            <Route 
+              path="/upload" 
+              element={
+                <ProtectedRoute>
+                  <UploadCraft />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/upload-craft-enhanced" 
+              element={
+                <ProtectedRoute>
+                  <UploadCraftEnhanced />
+                </ProtectedRoute>
+              } 
+            />
 
-              {/* Buyer Routes */}
-              <Route
-                path="/buyer-dashboard"
-                element={
-                  <RoleBasedRoute role="buyer">
-                    <PageWrapper><BuyerDashboard /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
+            {/* Role-Based Routes - Artisan Dashboard */}
+            <Route 
+              path="/artisan-dashboard" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanDashboard />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/crafts" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanCrafts />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/orders" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanOrders />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/orders/:orderId" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanOrderDetails />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/messages" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanMessages />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/analytics" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanAnalytics />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/profile" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanProfileEdit />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/artisan/reviews" 
+              element={
+                <RoleBasedRoute role="artisan">
+                  <ArtisanReviews />
+                </RoleBasedRoute>
+              } 
+            />
 
-              <Route
-                path="/cart"
-                element={
-                  <RoleBasedRoute role="buyer">
-                    <PageWrapper><Cart /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
+            {/* Role-Based Routes - Buyer Dashboard */}
+            <Route 
+              path="/buyer-dashboard" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <BuyerDashboard />
+                </RoleBasedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/messages" 
+              element={
+                <RoleBasedRoute role="buyer">
+                  <BuyerMessages />
+                </RoleBasedRoute>
+              } 
+            />
 
-              <Route
-                path="/buyer/wishlist"
-                element={
-                  <RoleBasedRoute role="buyer">
-                    <PageWrapper><Wishlist /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
+            {/* Role-Based Routes - Admin Dashboard */}
+            <Route 
+              path="/admin-dashboard" 
+              element={
+                <RoleBasedRoute role="admin">
+                  <AdminDashboard_Role />
+                </RoleBasedRoute>
+              } 
+            />
 
-              <Route
-                path="/buyer/orders"
-                element={
-                  <RoleBasedRoute role="buyer">
-                    <PageWrapper><BuyerOrders /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
+            {/* Backward Compatibility - Old dashboard routes */}
+            <Route 
+              path="/dashboard" 
+              element={
+                user ? (
+                  user.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
+                  user.role === 'buyer' ? <Navigate to="/buyer-dashboard" /> :
+                  <Navigate to="/artisan-dashboard" />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                user && user.role === 'admin' ? 
+                  <Navigate to="/admin-dashboard" /> : 
+                  <Navigate to="/" />
+              } 
+            />
 
-              <Route
-                path="/buyer/orders/:orderId"
-                element={
-                  <RoleBasedRoute role="buyer">
-                    <PageWrapper><OrderDetails /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
+            {/* Compare Page */}
+            <Route path="/compare" element={<ProductCompare />} />
 
-              {/* Artisan Routes */}
-              <Route
-                path="/artisan-dashboard"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanDashboard /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              <Route
-                path="/artisan/crafts"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanCrafts /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              <Route
-                path="/artisan/orders"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanOrders /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              <Route
-                path="/artisan/orders/:orderId"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanOrderDetails /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              <Route
-                path="/artisan/messages"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanMessages /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              <Route
-                path="/artisan/analytics"
-                element={
-                  <RoleBasedRoute role="artisan">
-                    <PageWrapper><ArtisanAnalytics /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              {/* Admin Routes */}
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <RoleBasedRoute role="admin">
-                    <PageWrapper><AdminDashboard_Role /></PageWrapper>
-                  </RoleBasedRoute>
-                }
-              />
-
-              {/* Dynamic Dashboard Redirect */}
-              <Route
-                path="/dashboard"
-                element={
-                  user ? (
-                    user.role === "admin" ? (
-                      <Navigate to="/admin-dashboard" replace />
-                    ) : user.role === "buyer" ? (
-                      <Navigate to="/buyer-dashboard" replace />
-                    ) : (
-                      <Navigate to="/artisan-dashboard" replace />
-                    )
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                }
-              />
-
-              {/* Old Admin Route Redirect */}
-              <Route
-                path="/admin"
-                element={
-                  user?.role === "admin" ? (
-                    <Navigate to="/admin-dashboard" replace />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                }
-              />
-
-              {/* 404 */}
-              <Route
-                path="*"
-                element={
-                  <PageWrapper>
-                    <div className="container not-found" style={{ padding: "80px 20px", textAlign: "center" }}>
-                      <h2>404 — Page not found</h2>
-                    </div>
-                  </PageWrapper>
-                }
-              />
-            </Routes>
-          </AnimatePresence>
-        </Suspense>
-      </main>
-
-      {/* Footer */}
-      <Footer />
-    </div>
+            {/* 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          </PageTransition>
+        </main>
+        <Footer />
+        <CompareBar />
+        <BackToTop />
+        <MobileBottomNav />
+      </div>
+    </ErrorBoundary>
   );
 }
 

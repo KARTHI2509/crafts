@@ -2,326 +2,533 @@ import React, { useContext, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LanguageContext } from "../context/LanguageContext";
 import { cartAPI, wishlistAPI } from "../services/api";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, ShoppingCart, Heart, Menu, X, User, Home, Compass } from "lucide-react";
-import "./Navbar.css";
+import { NotificationBell } from "./Notifications";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar({ user, logout }) {
   const { language, toggleLanguage } = useContext(LanguageContext);
-  const location = useLocation();
-
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
-  
-  // UI States
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [searchExpanded, setSearchExpanded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    if (user && user.role === "buyer") {
+    if (user && user.role === 'buyer') {
       fetchCartCount();
       fetchWishlistCount();
     }
   }, [user]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
   const fetchCartCount = async () => {
     try {
-      const res = await cartAPI.getCart();
-      setCartCount(res?.data?.data?.summary?.item_count || 0);
+      const response = await cartAPI.get();
+      setCartCount(response.data?.total_items || response.data?.items?.length || 0);
     } catch (error) {
-      console.error("Cart error:", error);
+      console.error('Error fetching cart count:', error);
     }
   };
 
   const fetchWishlistCount = async () => {
     try {
-      const res = await wishlistAPI.getCount();
-      setWishlistCount(res?.data?.data?.count || 0);
+      const response = await wishlistAPI.get();
+      setWishlistCount(response.data?.items?.length || response.data?.wishlist?.length || 0);
     } catch (error) {
-      console.error("Wishlist error:", error);
+      console.error('Error fetching wishlist count:', error);
     }
   };
 
-  // Scroll behavior for hidden/sticky nav
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Add scrolled class if scrolled past 20px
-      if (currentScrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-
-      // Hide on scroll down, show on scroll up
-      if (currentScrollY > lastScrollY && currentScrollY > 150) {
-        setIsHidden(true);
-      } else {
-        setIsHidden(false);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
-
-  // Handle CSS ripple effect
-  const handleRipple = (e) => {
-    const button = e.currentTarget;
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${e.clientX - button.getBoundingClientRect().left - radius}px`;
-    circle.style.top = `${e.clientY - button.getBoundingClientRect().top - radius}px`;
-    circle.classList.add("ripple");
-
-    const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) {
-      ripple.remove();
-    }
-
-    button.appendChild(circle);
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  // Nav Item Component for Underline Animation
-  const NavItem = ({ to, children }) => {
-    const isActive = location.pathname === to;
-    return (
-      <Link to={to} className="nav-item">
-        <motion.span
-          whileHover={{ y: -2 }}
-          transition={{ type: "spring", stiffness: 300, damping: 15 }}
-          style={{ display: "inline-block" }}
-        >
-          {children}
-        </motion.span>
-        {isActive && (
-          <motion.div
-            layoutId="navbar-underline"
-            className="nav-underline"
-            transition={{ type: "spring", bounce: 0.15, duration: 0.6 }}
-          />
-        )}
-      </Link>
-    );
+  const handleLogout = () => {
+    setMobileMenuOpen(false);
+    logout();
   };
 
   return (
     <>
-      <div className={`navbar-wrapper ${isHidden ? "hidden" : ""}`}>
-        <nav className={`navbar ${isScrolled ? "scrolled" : ""}`}>
-          <div className="container nav-inner">
+      <nav className="navbar">
+        <div className="nav-inner">
+          {/* Brand / Logo */}
+          <Link to="/" className="brand">
+            <div className="logo">🎨</div>
+            <span className="title">Logic Crafts</span>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <div className="nav-links desktop-nav">
+            <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
             
-            {/* Custom SVG Logo & Brand */}
-            <Link to="/" className="brand">
-              <motion.svg 
-                className="brand-svg" 
-                viewBox="0 0 24 24"
-                whileHover={{ rotate: 15, scale: 1.1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <defs>
-                  <linearGradient id="brand-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#D4A373" />
-                    <stop offset="100%" stopColor="#B5651D" />
-                  </linearGradient>
-                </defs>
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </motion.svg>
-              <motion.span 
-                className="brand-title"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                CraftHub
-              </motion.span>
+            {(!user || user.role === 'buyer') && (
+              <Link to="/explore" className={location.pathname === '/explore' ? 'active' : ''}>
+                Explore
+              </Link>
+            )}
+            
+            {user && user.role === 'artisan' && (
+              <Link to="/upload" className={location.pathname === '/upload' ? 'active' : ''}>
+                Upload Craft
+              </Link>
+            )}
+            
+            <Link to="/events" className={location.pathname === '/events' ? 'active' : ''}>
+              Events
             </Link>
-
-            {/* Desktop Links */}
-            <div className="nav-links">
-              <NavItem to="/">Home</NavItem>
-              {(!user || user.role === "buyer") && <NavItem to="/explore">Explore</NavItem>}
-              {user && user.role === "artisan" && <NavItem to="/upload">Upload</NavItem>}
-              <NavItem to="/events">Events</NavItem>
-              {user && <NavItem to="/dashboard">Dashboard</NavItem>}
-              {user && user.role === "admin" && <NavItem to="/admin">Admin</NavItem>}
-            </div>
-
-            {/* Actions & Badges */}
-            <div className="nav-actions">
-              
-              {/* Expandable Search */}
-              <div className={`search-container ${searchExpanded ? "expanded" : ""}`}>
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="Search crafts..." 
-                  onBlur={() => setSearchExpanded(false)}
-                />
-                <motion.button 
-                  className="search-btn" 
-                  onClick={() => setSearchExpanded(true)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Search size={20} />
-                </motion.button>
-              </div>
-
-              {/* Language Pill */}
-              <motion.div 
-                className="lang-toggle" 
-                onClick={toggleLanguage}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className={`lang-slider ${language === 'te' ? 'te' : 'en'}`} />
-                <span className={`lang-option ${language === 'en' ? 'active' : ''}`}>EN</span>
-                <span className={`lang-option ${language === 'te' ? 'active' : ''}`}>తె</span>
-              </motion.div>
-
-              {/* Buyer Icons */}
-              {user && user.role === "buyer" && (
-                <>
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Link to="/buyer/wishlist" className="badge-container">
-                      <Heart size={20} />
-                      <AnimatePresence>
-                        {wishlistCount > 0 && (
-                          <motion.span 
-                            initial={{ scale: 0 }} 
-                            animate={{ scale: 1 }} 
-                            exit={{ scale: 0 }} 
-                            className="badge"
-                          >
-                            {wishlistCount}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Link to="/cart" className="badge-container">
-                      <ShoppingCart size={20} />
-                      <AnimatePresence>
-                        {cartCount > 0 && (
-                          <motion.span 
-                            initial={{ scale: 0 }} 
-                            animate={{ scale: 1 }} 
-                            exit={{ scale: 0 }} 
-                            className="badge"
-                          >
-                            {cartCount}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </Link>
-                  </motion.div>
-                </>
-              )}
-
-              {/* Auth / Profile */}
-              {!user ? (
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <Link to="/login" className="nav-item"><User size={20} /></Link>
-                </motion.div>
-              ) : (
-                <motion.button 
-                  onClick={(e) => {
-                    handleRipple(e);
-                    setTimeout(logout, 300);
-                  }} 
-                  className="nav-item btn secondary" 
-                  style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px' }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Logout
-                </motion.button>
-              )}
-
-              {/* Mobile Hamburger */}
-              <button 
-                className={`mobile-toggle ${mobileMenuOpen ? "open" : ""}`} 
-                onClick={(e) => {
-                  handleRipple(e);
-                  setMobileMenuOpen(!mobileMenuOpen);
-                }}
-              >
-                <span />
-                <span />
-                <span />
+            
+            {user && user.role === 'buyer' && (
+              <Link to="/wishlist" className={`wishlist-link ${location.pathname === '/wishlist' ? 'active' : ''}`}>
+                ❤️ Wishlist
+                {wishlistCount > 0 && <span className="wishlist-badge">{wishlistCount}</span>}
+              </Link>
+            )}
+            
+            {user && user.role === 'buyer' && (
+              <Link to="/cart" className={`cart-link ${location.pathname === '/cart' ? 'active' : ''}`}>
+                🛒 Cart
+                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+              </Link>
+            )}
+            
+            {user && (
+              <Link to="/dashboard" className={location.pathname.includes('dashboard') ? 'active' : ''}>
+                Dashboard
+              </Link>
+            )}
+            
+            {user && user.role === 'admin' && (
+              <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+                Admin
+              </Link>
+            )}
+            
+            {!user && <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>Login</Link>}
+            {!user && (
+              <Link to="/register" className={`btn-register ${location.pathname === '/register' ? 'active' : ''}`}>
+                Register
+              </Link>
+            )}
+            
+            {user && (
+              <button onClick={handleLogout} className="btn-logout">
+                Logout
               </button>
+            )}
+          </div>
 
+          {/* Right side: Theme + Notifications + Language + Mobile Menu Button */}
+          <div className="nav-right">
+            <ThemeToggle />
+            {user && <NotificationBell />}
+            
+            <button className="lang-btn" onClick={toggleLanguage}>
+              {language === "en" ? "EN" : "తెలుగు"}
+            </button>
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              className={`mobile-menu-btn ${mobileMenuOpen ? 'open' : ''}`}
+              onClick={toggleMobileMenu}
+              aria-label="Toggle menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}></div>
+      )}
+
+      {/* Mobile Menu Slide-in Panel */}
+      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="mobile-menu-header">
+          <span className="mobile-menu-title">Menu</span>
+          <button className="mobile-close-btn" onClick={() => setMobileMenuOpen(false)}>✕</button>
+        </div>
+        
+        {user && (
+          <div className="mobile-user-info">
+            <div className="mobile-user-avatar">{user.name?.charAt(0).toUpperCase() || '👤'}</div>
+            <div className="mobile-user-details">
+              <span className="mobile-user-name">{user.name}</span>
+              <span className="mobile-user-role">{user.role}</span>
             </div>
           </div>
-        </nav>
+        )}
+        
+        <div className="mobile-nav-links">
+          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+            <span className="menu-icon">🏠</span> Home
+          </Link>
+          
+          {(!user || user.role === 'buyer') && (
+            <Link to="/explore" className={location.pathname === '/explore' ? 'active' : ''}>
+              <span className="menu-icon">🔍</span> Explore
+            </Link>
+          )}
+          
+          {user && user.role === 'artisan' && (
+            <Link to="/upload" className={location.pathname === '/upload' ? 'active' : ''}>
+              <span className="menu-icon">➕</span> Upload Craft
+            </Link>
+          )}
+          
+          <Link to="/events" className={location.pathname === '/events' ? 'active' : ''}>
+            <span className="menu-icon">📅</span> Events
+          </Link>
+          
+          {user && user.role === 'buyer' && (
+            <>
+              <Link to="/cart" className={location.pathname === '/cart' ? 'active' : ''}>
+                <span className="menu-icon">🛒</span> Cart
+                {cartCount > 0 && <span className="cart-badge-mobile">{cartCount}</span>}
+              </Link>
+              <Link to="/wishlist" className={location.pathname === '/wishlist' ? 'active' : ''}>
+                <span className="menu-icon">💝</span> Wishlist
+              </Link>
+              <Link to="/orders" className={location.pathname === '/orders' ? 'active' : ''}>
+                <span className="menu-icon">📦</span> My Orders
+              </Link>
+            </>
+          )}
+          
+          {user && (
+            <Link to="/dashboard" className={location.pathname.includes('dashboard') ? 'active' : ''}>
+              <span className="menu-icon">📊</span> Dashboard
+            </Link>
+          )}
+
+          {user && (
+            <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
+              <span className="menu-icon">👤</span> My Profile
+            </Link>
+          )}
+          
+          {user && user.role === 'admin' && (
+            <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+              <span className="menu-icon">⚙️</span> Admin Panel
+            </Link>
+          )}
+        </div>
+        
+        <div className="mobile-menu-footer">
+          {!user ? (
+            <>
+              <Link to="/login" className="mobile-login-btn">Login</Link>
+              <Link to="/register" className="mobile-register-btn">Create Account</Link>
+            </>
+          ) : (
+            <button onClick={handleLogout} className="mobile-logout-btn">
+              <span className="menu-icon">🚪</span> Logout
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Mobile Drawer */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div 
-            className="mobile-drawer"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          >
-            <div className="mobile-nav-links">
-              <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-              {(!user || user.role === "buyer") && <Link to="/explore" onClick={() => setMobileMenuOpen(false)}>Explore</Link>}
-              {user && user.role === "artisan" && <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>Upload</Link>}
-              <Link to="/events" onClick={() => setMobileMenuOpen(false)}>Events</Link>
-              {user && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>}
-              {user && user.role === "admin" && <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>Admin</Link>}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Sticky Bottom Navigation */}
-      <div className="mobile-bottom-nav">
-        <Link to="/" className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`}>
-          <Home size={20} />
-          <span>Home</span>
-        </Link>
-        <Link to="/explore" className={`bottom-nav-item ${location.pathname === "/explore" ? "active" : ""}`}>
-          <Compass size={20} />
-          <span>Explore</span>
-        </Link>
-        {(!user || user.role === "buyer") && (
-          <>
-            <Link to="/cart" className={`bottom-nav-item ${location.pathname === "/cart" ? "active" : ""}`}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <ShoppingCart size={20} />
-                {cartCount > 0 && <span className="bottom-badge">{cartCount}</span>}
-              </div>
-              <span>Cart</span>
-            </Link>
-            <Link to="/buyer/wishlist" className={`bottom-nav-item ${location.pathname === "/buyer/wishlist" ? "active" : ""}`}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <Heart size={20} />
-                {wishlistCount > 0 && <span className="bottom-badge">{wishlistCount}</span>}
-              </div>
-              <span>Wishlist</span>
-            </Link>
-          </>
-        )}
-        <Link to="/dashboard" className={`bottom-nav-item ${location.pathname.includes("/dashboard") || location.pathname.includes("-dashboard") ? "active" : ""}`}>
-          <User size={20} />
-          <span>Profile</span>
-        </Link>
-      </div>
+      {/* Mobile Menu Styles */}
+      <style>{`
+        .nav-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .mobile-menu-btn {
+          display: none;
+          flex-direction: column;
+          justify-content: space-between;
+          width: 28px;
+          height: 20px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          z-index: 60;
+        }
+        
+        .mobile-menu-btn span {
+          display: block;
+          width: 100%;
+          height: 3px;
+          background: var(--primary, #8b5a2b);
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
+        
+        .mobile-menu-btn.open span:nth-child(1) {
+          transform: translateY(8.5px) rotate(45deg);
+        }
+        
+        .mobile-menu-btn.open span:nth-child(2) {
+          opacity: 0;
+        }
+        
+        .mobile-menu-btn.open span:nth-child(3) {
+          transform: translateY(-8.5px) rotate(-45deg);
+        }
+        
+        .mobile-menu-overlay {
+          display: none;
+        }
+        
+        .mobile-menu {
+          display: none;
+        }
+        
+        .desktop-nav .active {
+          color: var(--accent, #d4a574) !important;
+          font-weight: 600;
+        }
+        
+        .btn-register {
+          background: var(--primary, #8b5a2b);
+          color: white !important;
+          padding: 8px 16px;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        
+        .btn-register:hover {
+          background: var(--primary-light, #a67c52);
+          transform: translateY(-2px);
+        }
+        
+        .btn-logout {
+          background: transparent;
+          border: 1px solid var(--danger, #c44536);
+          color: var(--danger, #c44536);
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 14px;
+        }
+        
+        .btn-logout:hover {
+          background: var(--danger, #c44536);
+          color: white;
+        }
+        
+        @media (max-width: 768px) {
+          .desktop-nav {
+            display: none !important;
+          }
+          
+          .mobile-menu-btn {
+            display: flex;
+          }
+          
+          .mobile-menu-overlay {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            animation: fadeIn 0.3s ease;
+          }
+          
+          .mobile-menu {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 280px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 55;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+          }
+          
+          .mobile-menu.open {
+            right: 0;
+          }
+          
+          .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .mobile-menu-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary, #8b5a2b);
+          }
+          
+          .mobile-close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px 8px;
+          }
+          
+          .mobile-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: var(--bg-cream, #faf8f4);
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .mobile-user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary, #8b5a2b), var(--accent, #d4a574));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+          }
+          
+          .mobile-user-details {
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .mobile-user-name {
+            font-weight: 600;
+            color: var(--text, #1f2937);
+          }
+          
+          .mobile-user-role {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: capitalize;
+          }
+          
+          .mobile-nav-links {
+            flex: 1;
+            padding: 16px 0;
+          }
+          
+          .mobile-nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            color: var(--text, #1f2937);
+            text-decoration: none;
+            font-size: 15px;
+            transition: all 0.2s;
+          }
+          
+          .mobile-nav-links a:hover,
+          .mobile-nav-links a.active {
+            background: var(--bg-cream, #faf8f4);
+            color: var(--primary, #8b5a2b);
+          }
+          
+          .mobile-nav-links a.active {
+            border-left: 3px solid var(--primary, #8b5a2b);
+            font-weight: 600;
+          }
+          
+          .menu-icon {
+            font-size: 18px;
+          }
+          
+          .cart-badge-mobile {
+            background: var(--danger, #c44536);
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: auto;
+          }
+          
+          .mobile-menu-footer {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .mobile-login-btn {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            border: 1px solid var(--primary, #8b5a2b);
+            color: var(--primary, #8b5a2b);
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+          
+          .mobile-login-btn:hover {
+            background: var(--primary, #8b5a2b);
+            color: white;
+          }
+          
+          .mobile-register-btn {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            background: var(--primary, #8b5a2b);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+          
+          .mobile-register-btn:hover {
+            background: var(--primary-light, #a67c52);
+          }
+          
+          .mobile-logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--danger, #c44536);
+            color: var(--danger, #c44536);
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .mobile-logout-btn:hover {
+            background: var(--danger, #c44536);
+            color: white;
+          }
+          
+          .brand .title {
+            font-size: 16px !important;
+          }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </>
   );
 }
