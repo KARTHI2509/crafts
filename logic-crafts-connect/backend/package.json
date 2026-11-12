@@ -21,7 +21,8 @@
   "author": "",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x",
+    "npm": ">=9.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import { connectDB } from './config/db.js';
+import { connectDB, getDbStatus } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import craftRoutes from './routes/craftRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -159,10 +159,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+  const db = getDbStatus();
   res.status(200).json({ 
-    status: 'healthy',
+    status: db.isConnected ? 'healthy' : 'degraded',
+    database: db.isConnected ? 'connected' : 'connecting_or_error',
+    databaseDetails: db,
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: Math.floor(process.uptime())
   });
 });
 
@@ -201,17 +204,21 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
-const startServer = async () => {
+const startServer = () => {
   try {
-    // Connect to MongoDB database
-    await connectDB();
-    console.log('✓ Database connected successfully');
-    
-    // Start listening for requests
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✓ Server running on port ${PORT}`);
+    // Start listening immediately so Render and health checks bind to PORT right away
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✓ Server running and listening on port ${PORT}`);
       console.log(`✓ Environment: ${process.env.NODE_ENV}`);
-      console.log(`✓ API URL: http://localhost:${PORT}`);
+      console.log(`✓ Health check available at: http://localhost:${PORT}/api/health`);
+
+      // Connect to MongoDB asynchronously in background with retry
+      connectDB();
+    });
+
+    server.on('error', (err) => {
+      console.error('✗ Server socket error:', err.message);
+      process.exit(1);
     });
   } catch (error) {
     console.error('✗ Failed to start server:', error.message);
@@ -222,8 +229,7 @@ const startServer = async () => {
 // Start the server
 startServer();
 
-// Handle unhandled promise rejections
+// Handle unhandled promise rejections without crashing the entire service
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
-  process.exit(1);
+  console.error('Unhandled Rejection:', err.message || err);
 });
